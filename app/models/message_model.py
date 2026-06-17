@@ -23,38 +23,15 @@ class SenderType(str, Enum):
 class MessageModel(BaseModel):
 
     message_id: UUID
-
     session_id: str
-
     sender: SenderType
-
     content: str
-
     timestamp: datetime
-
-    turn_index: int = Field(
-        ge=0
-    )
-
+    turn_index: int = Field(ge=0)
     msg_type: MessageType
-
-    sentiment: float = Field(
-        ge=-1.0,
-        le=1.0
-    )
-
+    sentiment: float = Field(ge=-1.0,le=1.0)
     tags: list[str]
-
     addressed_to: Optional[str] = None
-
-    word_count: int = Field(
-        ge=0
-    )
-
-    tokens_used: int = Field(
-        ge=0
-    )
-
-    api_latency_ms: int = Field(
-        ge=0
-    )
+    word_count: int = Field(ge=0)
+    tokens_used: int = Field(ge=0)
+    api_latency_ms: int = Field(ge=0    )
