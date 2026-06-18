@@ -128,27 +128,25 @@ async def inject_user_message(session_id: UUID, payload: UserMessagePayload):
     if session.get("status") != session_model.SessionStatus.ACTIVE.value:
         raise HTTPException(status_code=400, detail="Session is not active")
 
-    turn_index = await db.messages.count_documents({"session_id": str(session_id)}) + 1
-    tags = payload.tags or []
+    session_key = str(session_id)
+    state = debate_engine.session_states.get(session_key)
+    if state is None:
+        state = await debate_engine.ensure_state(topic=session["topic"], session_id=session_key)
 
-    user_message = message_model.MessageModel(
-        message_id=uuid4(),
-        session_id=str(session_id),
-        sender=message_model.SenderType.USER,
+    async def broadcaster(payload: dict):
+        await session_connection_manager.broadcast(state.session_id, payload)
+
+    user_message = await debate_engine.inject_user_message(
+        state=state,
         content=payload.content,
-        timestamp=datetime.utcnow(),
-        turn_index=turn_index,
-        msg_type=message_model.MessageType.USER,
-        sentiment=payload.sentiment,
-        tags=tags,
         addressed_to=payload.addressed_to,
-        word_count=len(payload.content.split()),
-        tokens_used=max(len(payload.content.split()), 1),
+        tags=payload.tags,
+        sentiment=payload.sentiment or 0.0,
         api_latency_ms=payload.api_latency_ms or 0,
+        broadcaster=broadcaster,
     )
 
-    result = await db.messages.insert_one(jsonable_encoder(user_message))
-    return {"inserted_id": str(result.inserted_id), "message_id": str(user_message.message_id)}
+    return {"inserted_id": str(user_message["message_id"]), "message": user_message}
 
 
 @router.websocket("/{session_id}/ws")

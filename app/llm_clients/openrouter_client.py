@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from app.config import settings
 
 from openai import AsyncOpenAI
 from .base import BaseLLMClient
