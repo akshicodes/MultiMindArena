@@ -8,7 +8,7 @@ class OpenRouterClient(BaseLLMClient):
     def __init__(self, api_key: str):
 
         self.client = AsyncOpenAI(
-            api_key=api_key,
+            api_key= settings.openrouter_api_key,
             base_url="https://openrouter.ai/api/v1"
         )
 

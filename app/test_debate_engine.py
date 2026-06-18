@@ -10,7 +10,7 @@ async def main():
 
     await engine.run(
         topic="Should AI replace teachers?",
-        rounds=2
+        rounds=3
     )
 
 
