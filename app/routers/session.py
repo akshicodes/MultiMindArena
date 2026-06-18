@@ -55,12 +55,15 @@ async def run_debate(session_id: UUID, payload: StartDebatePayload):
     if state is None:
         state = await debate_engine.ensure_state(topic=payload.topic, session_id=session_key)
 
+    async def broadcaster(payload: dict):
+        await session_connection_manager.broadcast(state.session_id, payload)
+
     asyncio.create_task(
         debate_engine.run(
             topic=state.topic,
             rounds=payload.rounds,
             session_id=state.session_id,
-            broadcaster=session_connection_manager.broadcast,
+            broadcaster=broadcaster,
         )
     )
 

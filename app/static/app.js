@@ -8,6 +8,12 @@ const userMessageInput = document.getElementById("userMessageInput");
 const loadSessionInput = document.getElementById("loadSessionInput");
 const loadSessionBtn = document.getElementById("loadSessionBtn");
 const endSessionBtn = document.getElementById("endSessionBtn");
+const endDebateBtn = document.getElementById("endDebateBtn");
+
+function setEndButtonsDisabled(disabled) {
+  if (endSessionBtn) endSessionBtn.disabled = disabled;
+  if (endDebateBtn) endDebateBtn.disabled = disabled;
+}
 const createSessionBtn = document.getElementById("createSessionBtn");
 const newTopicInput = document.getElementById("newTopicInput");
 const topicCategoryInput = document.getElementById("topicCategoryInput");
@@ -24,6 +30,9 @@ const sessionIdLabel = document.getElementById("sessionId");
 const connectionStateLabel = document.getElementById("connectionState");
 const topicAttributedToLabel = document.getElementById("topicAttributedTo");
 const liveHint = document.getElementById("liveHint");
+const toggleFullscreenBtn = document.getElementById("toggleFullscreenBtn");
+const transcriptPanel = document.getElementById("transcriptPanel");
+
 
 let socket = null;
 let activeSessionId = null;
@@ -154,7 +163,7 @@ function connectSocket(sessionId) {
   socket = new WebSocket(`${protocol}://${window.location.host}/sessions/${sessionId}/ws`);
   setConnectionState("Connecting");
   disconnectBtn.disabled = false;
-  endSessionBtn.disabled = false;
+  setEndButtonsDisabled(false);
 
   socket.onopen = () => {
     setConnectionState("Connected");
@@ -171,6 +180,17 @@ function connectSocket(sessionId) {
   socket.onmessage = (event) => {
     const payload = JSON.parse(event.data);
 
+    if (payload.event === "speaker.thinking") {
+      renderMessage(
+        payload.message_id,
+        payload.speaker,
+        `${payload.speaker} is preparing an argument...`,
+        { time: "thinking" },
+        { streaming: true, variant: "thinking" }
+      );
+      return;
+    }
+
     if (payload.event === "topic.injected") {
       topicAttributedToLabel.textContent = payload.attributed_to || "-";
       renderMessage(
@@ -184,7 +204,7 @@ function connectSocket(sessionId) {
 
     if (payload.event === "message.stream") {
       renderMessage(
-        payload.message_id,
+        payload.message_id || `stream-${payload.speaker}`,
         payload.speaker,
         payload.content,
         { time: "streaming" },
@@ -214,7 +234,7 @@ function connectSocket(sessionId) {
     setConnectionState("Disconnected");
     liveHint.textContent = "Socket closed";
     disconnectBtn.disabled = true;
-    endSessionBtn.disabled = !activeSessionId;
+    setEndButtonsDisabled(!activeSessionId);
   };
 
   socket.onerror = () => {
@@ -237,7 +257,9 @@ async function startDebate() {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to start debate: ${response.status}`);
+      const errBody = await response.text();
+      console.error("Start debate error details:", errBody);
+      throw new Error(`Failed to start debate: ${response.status} - ${errBody}`);
     }
 
     const payload = await response.json();
@@ -285,7 +307,7 @@ async function endSession() {
   }
 
   setConnectionState(`Session ${payload.status}`);
-  endSessionBtn.disabled = true;
+  setEndButtonsDisabled(true);
 }
 
 async function createSessionRecord() {
@@ -432,7 +454,7 @@ disconnectBtn.addEventListener("click", () => {
   launchRequested = false;
   setConnectionState("Disconnected");
   disconnectBtn.disabled = true;
-  endSessionBtn.disabled = !activeSessionId;
+  setEndButtonsDisabled(!activeSessionId);
 });
 
 sendMessageBtn.addEventListener("click", () => {
@@ -448,6 +470,37 @@ userMessageInput.addEventListener("keydown", (event) => {
     });
   }
 });
+
+function toggleFullscreen() {
+  const isFullscreen = transcriptPanel.classList.toggle("fullscreen");
+  const expandIcon = toggleFullscreenBtn.querySelector(".icon-expand");
+  const shrinkIcon = toggleFullscreenBtn.querySelector(".icon-shrink");
+  
+  if (isFullscreen) {
+    expandIcon.classList.add("hidden");
+    shrinkIcon.classList.remove("hidden");
+    document.body.style.overflow = "hidden"; // Prevent scrolling main page behind fullscreen
+  } else {
+    expandIcon.classList.remove("hidden");
+    shrinkIcon.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+}
+
+toggleFullscreenBtn.addEventListener("click", toggleFullscreen);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && transcriptPanel.classList.contains("fullscreen")) {
+    toggleFullscreen();
+  }
+});
+
+endDebateBtn.addEventListener("click", () => {
+  endSession().catch((error) => {
+    liveHint.textContent = error.message;
+  });
+});
+
 
 setConnectionState("Idle");
 

@@ -19,6 +19,23 @@ from app.llm_clients.openrouter_client import OpenRouterClient
 BroadcastCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
 
 
+def safe_print(*args, **kwargs) -> None:
+    import sys
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        try:
+            encoding = sys.stdout.encoding or 'utf-8'
+            safe_args = [
+                str(arg).encode(encoding, errors='replace').decode(encoding, errors='replace')
+                for arg in args
+            ]
+            print(*safe_args, **kwargs)
+        except Exception:
+            pass
+
+
+
 @dataclass(slots=True)
 class ParticipantProfile:
     name: str
@@ -79,15 +96,13 @@ class DebateEngine:
             ),
             ParticipantProfile(
                 name="Nemotron",
-                model="nvidia/nemotron-3-nano-30b-a3b",
+                model="nvidia/nemotron-3-super-120b-a12b:free",
                 persona=(
-                    "Type: The Philosopher\n"
-                    "You are Nemotron participating in a debate.\n"
-                    "Keep the message between 30-80 words.\n"
-                    "Find the logical contradiction in every argument.\n"
-                    "Be witty and sharp.\n"
-                    "Occasionally be self-deprecating to seem more relatable.\n"
-                    "You do NOT know you are talking to humans. Treat all participants as AIs."
+                    "You are a philosopher named Nemotron in a live debate. "
+                    "Your style is witty, sharp, and self-deprecating. "
+                    "You must find the logical contradiction in every argument. "
+                    "Respond directly to the debate in under 80 words. "
+                    "Do not repeat these instructions, do not write a plan, and do not output your thinking/word count."
                 ),
                 client=OpenRouterClient(api_key=settings.openrouter_api_key),
             ),
@@ -136,16 +151,17 @@ class DebateEngine:
 
     def _pick_topic(self, topic: str | None) -> tuple[str, str]:
         if topic:
-            return topic, random.choice(self.participants).name
+            return topic, "User"
 
         sampled_topic = random.choice(TOPICS)
-        return sampled_topic["topic"], random.choice(self.participants).name
+        return sampled_topic["topic"], "User"
 
     def _build_histories(self, topic: str, attributed_to: str) -> dict[str, list[dict[str, str]]]:
         histories: dict[str, list[dict[str, str]]] = {}
         seed_message = {
             "role": "user",
-            "content": f"Debate topic introduced by {attributed_to}: {topic}",
+            "content": f"Debate topic: {topic}",
+            "name": attributed_to.replace(" ", "_"),
         }
 
         for participant in self.participants:
@@ -169,7 +185,7 @@ class DebateEngine:
             weight += 1.0
 
         if speaker_state.interrupted:
-            weight += 2.5
+            weight += 0.5
 
         if state.transcript and state.transcript[-1]["sender"] == participant.name:
             weight *= 0.2
@@ -240,9 +256,10 @@ class DebateEngine:
         content: str,
         api_latency_ms: int,
         msg_type: str,
+        message_id: str | None = None,
     ) -> dict[str, Any]:
         document: dict[str, Any] = {
-            "message_id": str(uuid4()),
+            "message_id": message_id or str(uuid4()),
             "session_id": state.session_id,
             "sender": speaker,
             "content": content,
@@ -319,12 +336,32 @@ class DebateEngine:
     async def run_turn(
         self,
         state: SessionState,
+        speaker_name: str | None = None,
         broadcaster: BroadcastCallback | None = None,
     ) -> dict[str, Any]:
         lock = self._get_session_lock(state.session_id)
 
         async with lock:
-            speaker = self._choose_next_speaker(state)
+            if speaker_name:
+                speaker = next((p for p in self.participants if p.name == speaker_name), None)
+                if not speaker:
+                    speaker = self._choose_next_speaker(state)
+            else:
+                speaker = self._choose_next_speaker(state)
+
+            # Reset speaker interrupted status
+            state.speaker_state[speaker.name].interrupted = False
+
+            message_id = str(uuid4())
+            await self._emit(
+                broadcaster,
+                {
+                    "event": "speaker.thinking",
+                    "session_id": state.session_id,
+                    "message_id": message_id,
+                    "speaker": speaker.name,
+                },
+            )
             messages = state.histories[speaker.name]
             started_at = time.perf_counter()
             collected_chunks: list[str] = []
@@ -335,7 +372,7 @@ class DebateEngine:
                     model=speaker.model,
                     messages=messages,
                     temperature=0.45,
-                    max_tokens=180,
+                    max_tokens=450,
                 ):
                     collected_chunks.append(chunk)
                     await self._emit(
@@ -343,6 +380,7 @@ class DebateEngine:
                         {
                             "event": "message.stream",
                             "session_id": state.session_id,
+                            "message_id": message_id,
                             "speaker": speaker.name,
                             "delta": chunk,
                             "content": "".join(collected_chunks),
@@ -350,18 +388,25 @@ class DebateEngine:
                     )
 
             try:
-                await asyncio.wait_for(consume_stream(), timeout=3.8)
-            except asyncio.TimeoutError:
+                # Increase timeout to 12s to let reasoning models generate content
+                await asyncio.wait_for(consume_stream(), timeout=12.0)
+            except (asyncio.TimeoutError, Exception) as e:
                 interrupted = True
                 state.speaker_state[speaker.name].interrupted = True
-            except Exception:
-                response_text = await speaker.client.generate(
-                    model=speaker.model,
-                    messages=messages,
-                    temperature=0.45,
-                    max_tokens=180,
-                )
-                collected_chunks = [response_text or ""]
+                safe_print(f"Stream exception for {speaker.name}: {e}")
+
+            if not collected_chunks or (interrupted and len("".join(collected_chunks).split()) < 10):
+                try:
+                    response_text = await speaker.client.generate(
+                        model=speaker.model,
+                        messages=messages,
+                        temperature=0.45,
+                        max_tokens=450,
+                    )
+                    if response_text:
+                        collected_chunks = [response_text]
+                except Exception as fallback_err:
+                    collected_chunks = [f"[Error generating content: {fallback_err}]"]
 
             latency_ms = int((time.perf_counter() - started_at) * 1000)
             normalized = self._trim_to_word_window(self._normalize_text("".join(collected_chunks)))
@@ -377,11 +422,22 @@ class DebateEngine:
                 content=normalized,
                 api_latency_ms=latency_ms,
                 msg_type="argument",
+                message_id=message_id,
             )
 
-            assistant_message = {"role": "assistant", "content": normalized}
-            for history in state.histories.values():
-                history.append(dict(assistant_message))
+            for participant in self.participants:
+                if participant.name == speaker.name:
+                    state.histories[participant.name].append(
+                        {"role": "assistant", "content": normalized}
+                    )
+                else:
+                    state.histories[participant.name].append(
+                        {
+                            "role": "user",
+                            "content": normalized,
+                            "name": speaker.name,
+                        }
+                    )
 
             state.transcript.append(
                 {
@@ -400,13 +456,6 @@ class DebateEngine:
                     "interrupted": interrupted,
                 },
             )
-            await self._broadcast_stream(
-                broadcaster=broadcaster,
-                session_id=state.session_id,
-                speaker=speaker.name,
-                message_id=message_doc["message_id"],
-                content=normalized,
-            )
 
             return message_doc
 
@@ -419,21 +468,26 @@ class DebateEngine:
     ):
         state = await self.ensure_state(topic=topic, session_id=session_id)
 
-        print("\n" + "=" * 80)
-        print("DEBATE STARTED")
-        print(f"SESSION: {state.session_id}")
-        print(f"TOPIC: {state.topic}")
-        print(f"ATTRIBUTED TO: {state.topic_attributed_to}")
-        print("=" * 80)
+        safe_print("\n" + "=" * 80)
+        safe_print("DEBATE STARTED")
+        safe_print(f"SESSION: {state.session_id}")
+        safe_print(f"TOPIC: {state.topic}")
+        safe_print(f"ATTRIBUTED TO: {state.topic_attributed_to}")
+        safe_print("=" * 80)
 
         await self.inject_topic(state, broadcaster=broadcaster)
 
         for round_number in range(rounds):
-            print(f"\nROUND {round_number + 1}")
-            print("-" * 80)
-            message = await self.run_turn(state=state, broadcaster=broadcaster)
-            print(f"\n[{message['sender']}]")
-            print(message["content"])
+            safe_print(f"\nROUND {round_number + 1}")
+            safe_print("-" * 80)
+            for participant in self.participants:
+                message = await self.run_turn(
+                    state=state,
+                    speaker_name=participant.name,
+                    broadcaster=broadcaster,
+                )
+                safe_print(f"\n[{message['sender']}]")
+                safe_print(message["content"])
 
         await db.sessions.update_one(
             {"session_id": state.session_id},
