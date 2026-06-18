@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Debate Engine Live</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="background-orb orb-1"></div>
+  <div class="background-orb orb-2"></div>
+  <main class="shell">
+    <section class="hero panel">
+      <div class="eyebrow">MultiMind Arena</div>
+      <h1>Live debate session control</h1>
+      <p class="lede">Start a topic, connect the websocket, and watch each turn stream in real time.</p>
+
+      <div class="controls">
+        <label class="field grow">
+          <span>Topic</span>
+          <input id="topicInput" type="text" placeholder="Should AI replace teachers?" />
+        </label>
+
+        <label class="field small">
+          <span>Rounds</span>
+          <input id="roundsInput" type="number" min="1" max="12" value="3" />
+        </label>
+      </div>
+
+      <div class="button-row">
+        <button id="randomTopicBtn" class="secondary">Random topic</button>
+        <button id="startBtn" class="primary">Start debate</button>
+        <button id="disconnectBtn" class="secondary" disabled>Disconnect</button>
+      </div>
+
+      <div class="status-grid">
+        <div class="status-card">
+          <span>Session</span>
+          <strong id="sessionId">Not started</strong>
+        </div>
+        <div class="status-card">
+          <span>State</span>
+          <strong id="connectionState">Idle</strong>
+        </div>
+        <div class="status-card">
+          <span>Topic attributed to</span>
+          <strong id="topicAttributedTo">-</strong>
+        </div>
+      </div>
+    </section>
+
+    <section id="transcriptPanel" class="panel transcript-panel">
+      <div class="panel-header">
+        <h2>Live transcript</h2>
+        <div class="header-actions">
+          <span id="liveHint">Waiting for a session</span>
+          <button id="endDebateBtn" class="danger-btn" disabled>End debate</button>
+          <button id="toggleFullscreenBtn" class="icon-btn" title="Toggle Fullscreen">
+            <svg class="icon icon-expand" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            <svg class="icon icon-shrink hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="transcript" class="transcript"></div>
+    </section>
+
+    <section class="panel composer-panel">
+      <div class="panel-header">
+        <h2>Inject a user message</h2>
+        <span>Optional, once a session is active</span>
+      </div>
+
+      <div class="composer">
+        <input id="userMessageInput" type="text" placeholder="Challenge the room with a quick comment..." />
+        <button id="sendMessageBtn" class="primary" disabled>Send</button>
+      </div>
+    </section>
+
+    <section class="panel admin-panel">
+      <div class="panel-header">
+        <h2>Session tools</h2>
+        <span>Load, create, or end sessions</span>
+      </div>
+
+      <div class="stack">
+        <div class="composer">
+          <input id="loadSessionInput" type="text" placeholder="Existing session id" />
+          <button id="loadSessionBtn" class="secondary">Load session</button>
+          <button id="endSessionBtn" class="secondary" disabled>End session</button>
+          <button id="createSessionBtn" class="secondary">Create session record</button>
+        </div>
+      </div>
+
+      <div class="panel-header spaced-top">
+        <h2>Topic tools</h2>
+        <span>List, create, and randomize topics</span>
+      </div>
+
+      <div class="stack">
+        <div class="composer">
+          <input id="newTopicInput" type="text" placeholder="New topic text" />
+          <input id="topicCategoryInput" type="text" placeholder="category" />
+          <input id="topicDifficultyInput" type="number" min="1" max="5" value="3" />
+          <input id="topicTagsInput" type="text" placeholder="tags separated by comma" />
+          <button id="createTopicBtn" class="secondary">Create topic</button>
+          <button id="listTopicsBtn" class="secondary">List topics</button>
+        </div>
+        <div id="topicsOutput" class="api-output"></div>
+      </div>
+
+      <div class="panel-header spaced-top">
+        <h2>LLM config tools</h2>
+        <span>Submit raw config JSON to the backend</span>
+      </div>
+
+      <div class="stack">
+        <textarea id="llmConfigInput" class="json-input" spellcheck="false">{
+  "provider": "openai",
+  "model_name": "openai/gpt-oss-120b",
+  "api_keys": ["replace-me"],
+  "current_key_index": 0,
+  "max_tokens": 256,
+  "temperature": 0.7,
+  "persona_prompts": {"default": "Keep it short and sharp."},
+  "rate_limit_rpm": 60,
+  "is_active": true
+}</textarea>
+        <div class="button-row">
+          <button id="createLlmConfigBtn" class="secondary">Create LLM config</button>
+        </div>
+        <div id="configOutput" class="api-output"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

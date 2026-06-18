@@ -1,15 +1,21 @@
+import asyncio
 from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
+from ..debate_engine import DebateEngine
 from ..database import db
 from ..models import analytics_model, message_model, session_model
+from ..realtime import session_connection_manager
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+debate_engine = DebateEngine()
+
+
 class UserMessagePayload(BaseModel):
     content: str
     addressed_to: Optional[str] = None
@@ -18,10 +24,54 @@ class UserMessagePayload(BaseModel):
     api_latency_ms: Optional[int] = Field(default=0, ge=0)
 
 
+class StartDebatePayload(BaseModel):
+    topic: Optional[str] = None
+    rounds: int = Field(default=3, ge=1, le=12)
+
+
 @router.post("/", status_code=201)
 async def create_session(session: session_model.SessionModel):
     result = await db.sessions.insert_one(jsonable_encoder(session))
     return {"inserted_id": str(result.inserted_id), "session_id": str(session.session_id)}
+
+
+@router.post("/start")
+async def start_debate(payload: StartDebatePayload):
+    state = await debate_engine.ensure_state(topic=payload.topic)
+
+    return {
+        "session_id": state.session_id,
+        "topic": state.topic,
+        "topic_attributed_to": state.topic_attributed_to,
+        "rounds": payload.rounds,
+        "ws_url": f"/sessions/{state.session_id}/ws",
+    }
+
+
+@router.post("/{session_id}/run")
+async def run_debate(session_id: UUID, payload: StartDebatePayload):
+    session_key = str(session_id)
+    state = debate_engine.session_states.get(session_key)
+    if state is None:
+        state = await debate_engine.ensure_state(topic=payload.topic, session_id=session_key)
+
+    async def broadcaster(payload: dict):
+        await session_connection_manager.broadcast(state.session_id, payload)
+
+    asyncio.create_task(
+        debate_engine.run(
+            topic=state.topic,
+            rounds=payload.rounds,
+            session_id=state.session_id,
+            broadcaster=broadcaster,
+        )
+    )
+
+    return {
+        "session_id": state.session_id,
+        "status": "started",
+        "rounds": payload.rounds,
+    }
 
 
 @router.get("/{session_id}")
@@ -99,3 +149,13 @@ async def inject_user_message(session_id: UUID, payload: UserMessagePayload):
 
     result = await db.messages.insert_one(jsonable_encoder(user_message))
     return {"inserted_id": str(result.inserted_id), "message_id": str(user_message.message_id)}
+
+
+@router.websocket("/{session_id}/ws")
+async def session_ws(websocket: WebSocket, session_id: UUID):
+    await session_connection_manager.connect(str(session_id), websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await session_connection_manager.disconnect(str(session_id), websocket)
