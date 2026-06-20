@@ -1,7 +1,7 @@
 
 import asyncio
 
-from app.debate_engine import DebateEngine
+from backend.debate_engine import DebateEngine
 
 
 async def main():

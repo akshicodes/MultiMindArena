@@ -1,7 +1,7 @@
 import asyncio
 
-from app.llm_clients.openrouter_client import OpenRouterClient
-from app.config import settings
+from backend.llm_clients.openrouter_client import OpenRouterClient
+from backend.config import settings
 
 
 async def main():

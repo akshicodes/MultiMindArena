@@ -1,7 +1,7 @@
 import asyncio
 
-from database import db
-from indexes import create_indexes
+from backend.database import db
+from backend.indexes import create_indexes
 from ..data.topics import TOPICS
 
 

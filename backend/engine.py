@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Any, Awaitable, Callable
 from uuid import uuid4
 
-from app.data.topics import TOPICS
-from app.database import db
+from backend.data.topics import TOPICS
+from backend.database import db
 
 from .participants import ParticipantProfile, build_default_participants
 from .persistence import ensure_session_record, persist_message, persist_topic

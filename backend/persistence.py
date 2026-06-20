@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from fastapi.encoders import jsonable_encoder
 
-from app.database import db
+from backend.database import db
 
 from .participants import ParticipantProfile
 from .state import SessionState

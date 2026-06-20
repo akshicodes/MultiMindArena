@@ -11,7 +11,7 @@ from .routers import router as api_router
 app = FastAPI()
 app.include_router(api_router)
 
-static_dir = Path(__file__).resolve().parent / "static"
+static_dir = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.on_event("startup")

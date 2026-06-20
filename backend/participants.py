@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.config import settings
-from app.llm_clients.openrouter_client import OpenRouterClient
+from backend.config import settings
+from backend.llm_clients.openrouter_client import OpenRouterClient
 
 
 @dataclass(slots=True)
