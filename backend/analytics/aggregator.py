@@ -1,5 +1,29 @@
 from collections import Counter
+import re
+
+from nltk.corpus import stopwords
+
 from backend.analytics.sentiment import calculate_sentiment
+from backend.database import db
+
+
+STOP_WORDS = set(stopwords.words("english"))
+
+AGGRESSIVE_WORDS = {
+    "wrong",
+    "ridiculous",
+    "nonsense",
+    "absurd",
+    "stupid",
+    "false",
+    "never",
+    "cannot",
+    "terrible",
+    "bad",
+    "idiotic",
+    "foolish",
+    "useless"
+}
 
 
 def build_analytics(messages):
@@ -9,17 +33,21 @@ def build_analytics(messages):
     sentiment_totals = {}
     sentiment_counts = {}
 
+    aggression_scores = {}
+
     all_words = []
 
     for msg in messages:
 
         sender = msg["sender"]
+        content = msg["content"]
 
         message_counts[sender] += 1
 
-        score = calculate_sentiment(
-            msg["content"]
-        )
+        # --------------------
+        # Sentiment
+        # --------------------
+        score = calculate_sentiment(content)
 
         sentiment_totals[sender] = (
             sentiment_totals.get(sender, 0)
@@ -31,10 +59,39 @@ def build_analytics(messages):
             + 1
         )
 
-        all_words.extend(
-            msg["content"].lower().split()
+        # --------------------
+        # Aggression Index
+        # --------------------
+        words = re.findall(
+            r"\b[a-zA-Z]+\b",
+            content.lower()
         )
 
+        aggressive_count = sum(
+            1
+            for word in words
+            if word in AGGRESSIVE_WORDS
+        )
+
+        aggression_scores[sender] = (
+            aggression_scores.get(sender, 0)
+            + aggressive_count
+        )
+
+        # --------------------
+        # Word Cloud Words
+        # --------------------
+        filtered_words = [
+            word
+            for word in words
+            if word not in STOP_WORDS
+        ]
+
+        all_words.extend(filtered_words)
+
+    # --------------------
+    # Average Sentiment
+    # --------------------
     avg_sentiment = {}
 
     for sender in sentiment_totals:
@@ -45,11 +102,15 @@ def build_analytics(messages):
             3
         )
 
+    # --------------------
+    # Top Words
+    # --------------------
     top_words = Counter(all_words).most_common(30)
 
-    return {
+    analytics = {
         "message_counts": dict(message_counts),
         "avg_sentiment": avg_sentiment,
+        "aggression_scores": aggression_scores,
         "top_words": [
             {
                 "word": word,
@@ -58,3 +119,38 @@ def build_analytics(messages):
             for word, count in top_words
         ]
     }
+
+    return analytics
+
+
+async def generate_session_analytics(
+    session_id: str
+):
+
+    messages = await db.messages.find(
+        {"session_id": session_id}
+    ).to_list(None)
+
+    if not messages:
+        return None
+
+    analytics_data = build_analytics(
+        messages
+    )
+
+    analytics_doc = {
+        "session_id": session_id,
+        **analytics_data
+    }
+
+    await db.analytics.update_one(
+        {
+            "session_id": session_id
+        },
+        {
+            "$set": analytics_doc
+        },
+        upsert=True
+    )
+
+    return analytics_doc
