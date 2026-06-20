@@ -16,6 +16,10 @@ from .persistence import ensure_session_record, persist_message, persist_topic
 from .scheduler import build_histories, choose_next_speaker
 from .state import SessionState, SpeakerState
 
+from backend.analytics.aggregator import (
+    generate_session_analytics
+)
+
 
 BroadcastCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
 
@@ -362,7 +366,7 @@ class DebateEngine:
                 safe_print(f"\n[{message['sender']}]")
                 safe_print(message["content"])
 
-        await db.sessions.update_one(
+            await db.sessions.update_one(
             {"session_id": state.session_id},
             {
                 "$set": {
@@ -370,6 +374,16 @@ class DebateEngine:
                     "ended_at": datetime.utcnow(),
                 }
             },
+        )
+
+        # Generate analytics automatically
+        await generate_session_analytics(
+            state.session_id
+        )
+
+        safe_print(
+            f"Analytics generated for session "
+            f"{state.session_id}"
         )
 
         return state.transcript

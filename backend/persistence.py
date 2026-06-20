@@ -10,6 +10,7 @@ from backend.database import db
 
 from .participants import ParticipantProfile
 from .state import SessionState
+from backend.analytics.sentiment import calculate_sentiment
 
 
 async def ensure_session_record(state: SessionState, participants: list[ParticipantProfile]) -> None:
@@ -45,6 +46,9 @@ async def persist_message(
     sentiment: float = 0.0,
 ) -> dict[str, Any]:
     message_tags = tags or ["debate", "live"]
+
+    sentiment = calculate_sentiment(content)
+    print("SENTIMENT DEBUG:", sentiment)
     document: dict[str, Any] = {
         "message_id": str(uuid4()),
         "session_id": state.session_id,

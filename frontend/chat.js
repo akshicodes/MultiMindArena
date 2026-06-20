@@ -14,6 +14,12 @@ const streamNodes = new Map();
 
 function setActiveSession(sessionId) {
   activeSessionId = sessionId;
+
+  localStorage.setItem(
+    "activeSessionId",
+    sessionId
+  );
+
   sendMessageBtn.disabled = !sessionId;
   endDebateBtn.disabled = !sessionId;
 }

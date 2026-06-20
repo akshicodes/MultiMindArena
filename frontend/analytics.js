@@ -1,6 +1,10 @@
 console.log("Analytics JS loaded");
 
-const SESSION_ID = "3a2e7b82-bbe4-4e12-b7c8-6039dd749f5b";
+function getSessionId() {
+    return localStorage.getItem(
+        "activeSessionId"
+    );
+};
 
 let messageChart = null;
 let sentimentChart = null;
@@ -8,9 +12,18 @@ let aggressionChart = null;
 
 async function loadAnalytics() {
     try {
-        const response = await fetch(
-            `/sessions/${SESSION_ID}/analytics`
-        );
+        const sessionId = getSessionId();
+
+if (!sessionId) {
+    console.error(
+        "No active session found"
+    );
+    return;
+}
+
+const response = await fetch(
+    `/sessions/${sessionId}/analytics`
+);
 
         const data = await response.json();
 
