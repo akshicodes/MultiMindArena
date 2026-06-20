@@ -34,15 +34,64 @@ def build_analytics(messages):
     sentiment_counts = {}
 
     aggression_scores = {}
+    win_scores = {}
+
+    longest_streak = {}
+    current_streak = {}
 
     all_words = []
+
+    positive_keywords = [
+        "agree",
+        "correct",
+        "good point",
+        "valid",
+        "excellent",
+        "strong argument"
+    ]
+
+    previous_sender = None
 
     for msg in messages:
 
         sender = msg["sender"]
         content = msg["content"]
 
+        # --------------------
+        # Longest Streak
+        # --------------------
+        if sender == previous_sender:
+
+            current_streak[sender] = (
+                current_streak.get(sender, 1) + 1
+            )
+
+        else:
+
+            current_streak[sender] = 1
+
+        previous_sender = sender
+
+        longest_streak[sender] = max(
+            longest_streak.get(sender, 0),
+            current_streak[sender]
+        )
+
+        # --------------------
+        # Message Count
+        # --------------------
         message_counts[sender] += 1
+
+        # --------------------
+        # Win Predictor
+        # --------------------
+        win_scores[sender] = win_scores.get(sender, 0)
+
+        content_lower = content.lower()
+
+        for keyword in positive_keywords:
+            if keyword in content_lower:
+                win_scores[sender] += 1
 
         # --------------------
         # Sentiment
@@ -79,7 +128,7 @@ def build_analytics(messages):
         )
 
         # --------------------
-        # Word Cloud Words
+        # Word Cloud
         # --------------------
         filtered_words = [
             word
@@ -107,10 +156,38 @@ def build_analytics(messages):
     # --------------------
     top_words = Counter(all_words).most_common(30)
 
+    # --------------------
+    # Topic Drift
+    # --------------------
+
+    topic_keywords = {
+        "happiness",
+        "measure",
+        "scientific"
+    }
+
+    found_keywords = 0
+
+    for word, count in top_words:
+
+        if word in topic_keywords:
+            found_keywords += 1
+
+    topic_drift_score = round(
+        1 - (
+            found_keywords /
+            max(len(topic_keywords), 1)
+        ),
+        2
+    )
+
     analytics = {
         "message_counts": dict(message_counts),
         "avg_sentiment": avg_sentiment,
         "aggression_scores": aggression_scores,
+        "win_score": win_scores,
+        "longest_streak": longest_streak,
+        "topic_drift_score": topic_drift_score,
         "top_words": [
             {
                 "word": word,

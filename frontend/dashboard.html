@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MultiMind Analytics Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+    <script src="/static/analytics.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 180px;
+        }
+
+        canvas {
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>MultiMind Arena Analytics Dashboard</h1>
+
+<div class="summary">
+    <div class="card">
+        <h3>Session ID</h3>
+        <p id="session-id">Loading...</p>
+    </div>
+
+    <div class="card">
+        <h3>Total Messages</h3>
+        <p id="total-messages">0</p>
+    </div>
+</div>
+
+<h2>Message Leaderboard</h2>
+
+<div
+    style="
+        background:white;
+        padding:20px;
+        border-radius:12px;
+        width:800px;
+        height:400px;
+    "
+>
+    <canvas id="messageChart"></canvas>
+</div>
+
+<h2>Average Sentiment</h2>
+
+<div
+    style="
+        background:white;
+        padding:20px;
+        border-radius:12px;
+        width:800px;
+        height:400px;
+        margin-top:20px;
+    "
+>
+    <canvas id="sentimentChart"></canvas>
+</div>
+
+<h2>Aggression Index</h2>
+
+<div
+    style="
+        background:white;
+        padding:20px;
+        border-radius:12px;
+        width:800px;
+        height:400px;
+        margin-top:20px;
+    "
+>
+    <canvas id="aggressionChart"></canvas>
+</div>
+
+<h2>Word Cloud</h2>
+
+<div
+    style="
+        background:white;
+        border-radius:12px;
+        width:800px;
+        height:500px;
+        margin-top:20px;
+        padding:20px;
+    "
+>
+    <canvas
+        id="wordCloudCanvas"
+        width="760"
+        height="460">
+    </canvas>
+</div>
+
+<h2>🏆 Win Predictor</h2>
+
+<div class="card">
+    <h3 id="leader-name">Loading...</h3>
+</div>
+
+<h2>👑 Longest Streak</h2>
+
+<div class="card">
+    <h3 id="streak-leader">Loading...</h3>
+</div>
+
+<h2>📍 Topic Drift</h2>
+
+<div class="card">
+    <h3 id="topic-drift-text">
+        Loading...
+    </h3>
+
+    <progress
+        id="topic-drift-bar"
+        value="0"
+        max="100"
+        style="width:300px;">
+    </progress>
+</div>
+
+
+</body>
+</html>
