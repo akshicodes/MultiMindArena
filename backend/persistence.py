@@ -65,6 +65,11 @@ async def persist_message(
         "api_latency_ms": api_latency_ms,
     }
 
+    print("DOCUMENT SENTIMENT:", document["sentiment"])
+
+    print("FULL DOCUMENT:")
+    print(document)
+
     await db.messages.insert_one(jsonable_encoder(document))
     await db.sessions.update_one(
         {"session_id": state.session_id},

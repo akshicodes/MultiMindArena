@@ -13,15 +13,21 @@ let pollTimer = null;
 const streamNodes = new Map();
 
 function setActiveSession(sessionId) {
-  activeSessionId = sessionId;
+    activeSessionId = sessionId;
 
-  localStorage.setItem(
-    "activeSessionId",
-    sessionId
-  );
+    if (sessionId) {
+        localStorage.setItem(
+            "activeSessionId",
+            sessionId
+        );
+    } else {
+        localStorage.removeItem(
+            "activeSessionId"
+        );
+    }
 
-  sendMessageBtn.disabled = !sessionId;
-  endDebateBtn.disabled = !sessionId;
+    sendMessageBtn.disabled = !sessionId;
+    endDebateBtn.disabled = !sessionId;
 }
 
 function scrollTranscriptToBottom() {
@@ -215,4 +221,4 @@ endDebateBtn.addEventListener("click", () => {
   endDebate().catch((error) => console.error(error.message));
 });
 
-setActiveSession(null);
+// setActiveSession(null);

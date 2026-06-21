@@ -1,10 +1,20 @@
 console.log("Analytics JS loaded");
 
 function getSessionId() {
-    return localStorage.getItem(
-        "activeSessionId"
-    );
-};
+    const sessionId =
+        localStorage.getItem(
+            "activeSessionId"
+        );
+
+    if (
+        !sessionId ||
+        sessionId === "null"
+    ) {
+        return null;
+    }
+
+    return sessionId;
+}
 
 let messageChart = null;
 let sentimentChart = null;
@@ -26,17 +36,24 @@ const response = await fetch(
 );
 
         const data = await response.json();
-
         console.log("Analytics Data:", data);
+
+        if (!response.ok) {
+    console.log("Analytics not ready yet");
+    return;
+}
 
         // Session ID
         document.getElementById("session-id").innerText =
             data.session_id;
 
         // Total Messages
-        const totalMessages =
-            Object.values(data.message_counts)
-                .reduce((a, b) => a + b, 0);
+        const counts =
+    data.message_counts || {};
+
+const totalMessages =
+    Object.values(counts)
+        .reduce((a, b) => a + b, 0);
 
         document.getElementById("total-messages")
             .innerText = totalMessages;

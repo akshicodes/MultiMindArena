@@ -357,16 +357,28 @@ class DebateEngine:
         for round_number in range(rounds):
             safe_print(f"\nROUND {round_number + 1}")
             safe_print("-" * 80)
+
             for participant in self.participants:
                 message = await self.run_turn(
                     state=state,
                     speaker_name=participant.name,
                     broadcaster=broadcaster,
                 )
+
                 safe_print(f"\n[{message['sender']}]")
                 safe_print(message["content"])
 
-            await db.sessions.update_one(
+            # Generate analytics after EACH ROUND
+            await generate_session_analytics(
+                state.session_id
+            )
+
+            safe_print(
+                f"Analytics updated for round {round_number + 1}"
+            )
+
+        # Debate finished
+        await db.sessions.update_one(
             {"session_id": state.session_id},
             {
                 "$set": {
@@ -376,7 +388,7 @@ class DebateEngine:
             },
         )
 
-        # Generate analytics automatically
+        # Final analytics update
         await generate_session_analytics(
             state.session_id
         )
