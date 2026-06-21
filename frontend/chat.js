@@ -1,6 +1,47 @@
+const streamNodes = new Map();
+const typingIndicators = new Map();
+
+const typingIndicator =
+  document.getElementById("typing-indicator");
+
+function showTypingIndicator(speaker) {
+  if (!typingIndicator) return;
+
+  typingIndicator.textContent =
+    `${speaker} is thinking...`;
+}
+
+function removeTypingIndicator() {
+  if (!typingIndicator) return;
+
+  typingIndicator.textContent = "";
+}
+  // const key = `typing-${speaker}`;
+
+  // renderMessage(
+  //   key,
+  //   speaker,
+  //   `${speaker} is thinking...`,
+  //   { time: "live" },
+  //   {
+  //     streaming: false,
+  //   }
+  // );
+
+  // typingIndicators.set(speaker, key);
+
+
+
+
+let socket = null;
+
 const topicInput = document.getElementById("topicInput");
 const roundsInput = document.getElementById("roundsInput");
 const startBtn = document.getElementById("startBtn");
+const randomTopicBtn =
+    document.getElementById(
+        "randomTopicBtn"
+    );
 const endDebateBtn = document.getElementById("endDebateBtn");
 const sendMessageBtn = document.getElementById("sendMessageBtn");
 const userMessageInput = document.getElementById("userMessageInput");
@@ -10,7 +51,64 @@ let activeSessionId = null;
 let pendingLaunch = null;
 let launchRequested = false;
 let pollTimer = null;
-const streamNodes = new Map();
+// const streamNodes = new Map();
+
+function connectWebSocket(sessionId) {
+  if (socket) {
+    socket.close();
+  }
+
+  const protocol =
+    window.location.protocol === "https:"
+      ? "wss:"
+      : "ws:";
+
+  socket = new WebSocket(
+    `${protocol}//${window.location.host}/sessions/${sessionId}/ws`
+  );
+
+  socket.onopen = () => {
+    console.log("WebSocket connected");
+  };
+
+  socket.onmessage = (event) => {
+  const payload = JSON.parse(event.data);
+
+  console.log("WS EVENT:", payload);
+
+  if (payload.event === "speaker.thinking") {
+    showTypingIndicator(payload.speaker);
+    return;
+  }
+
+  if (payload.event === "message.stream") {
+  removeTypingIndicator();
+  return;
+}
+
+  if (payload.event === "message.final") {
+    const speaker =
+      payload.message?.sender ||
+      payload.message?.speaker;
+
+    if (speaker) {
+      removeTypingIndicator();
+    }
+
+    return;
+  }
+};
+
+  socket.onclose = () => {
+    console.log("WebSocket disconnected");
+  };
+
+  socket.onerror = (err) => {
+    console.error("WebSocket error", err);
+  };
+}
+
+
 
 function setActiveSession(sessionId) {
     activeSessionId = sessionId;
@@ -132,6 +230,7 @@ async function startDebate() {
 
     const payload = await response.json();
     setActiveSession(payload.session_id);
+    connectWebSocket(payload.session_id);
     transcript.innerHTML = "";
     streamNodes.clear();
     pendingLaunch = { sessionId: payload.session_id, rounds };
@@ -210,6 +309,18 @@ startBtn.addEventListener("click", () => {
 sendMessageBtn.addEventListener("click", () => {
   sendUserMessage().catch((error) => console.error(error.message));
 });
+randomTopicBtn.addEventListener(
+    "click",
+    () => {
+
+        topicInput.value = "";
+
+        startDebate()
+            .catch(error =>
+                console.error(error.message)
+            );
+    }
+);
 
 userMessageInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {

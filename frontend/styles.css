@@ -319,7 +319,12 @@ button:disabled {
   background: rgba(2, 8, 20, 0.35);
   animation: pulse-breathing 2s infinite ease-in-out;
 }
-
+#typing-indicator {
+    min-height: 24px;
+    padding: 8px 12px;
+    font-style: italic;
+    opacity: 0.8;
+}
 .message.thinking .content {
   color: var(--muted);
   font-style: italic;
