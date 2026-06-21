@@ -41,6 +41,12 @@ def build_analytics(messages):
 
     all_words = []
 
+    sentiment_timeline = []
+    rolling_sentiment = []
+
+    running_total = 0
+    turn_index = 0
+
     positive_keywords = [
         "agree",
         "correct",
@@ -109,6 +115,27 @@ def build_analytics(messages):
         )
 
         # --------------------
+        # Sentiment Timeline
+        # --------------------
+        turn_index += 1
+
+        sentiment_timeline.append({
+            "turn": turn_index,
+            "sender": sender,
+            "sentiment": round(score, 3)
+        })
+
+        running_total += score
+
+        rolling_sentiment.append({
+            "turn": turn_index,
+            "value": round(
+                running_total / turn_index,
+                3
+            )
+        })
+
+        # --------------------
         # Aggression Index
         # --------------------
         words = re.findall(
@@ -159,7 +186,6 @@ def build_analytics(messages):
     # --------------------
     # Topic Drift
     # --------------------
-
     topic_keywords = {
         "happiness",
         "measure",
@@ -188,6 +214,8 @@ def build_analytics(messages):
         "win_score": win_scores,
         "longest_streak": longest_streak,
         "topic_drift_score": topic_drift_score,
+        "sentiment_timeline": sentiment_timeline,
+        "rolling_sentiment": rolling_sentiment,
         "top_words": [
             {
                 "word": word,
@@ -206,6 +234,9 @@ async def generate_session_analytics(
 
     messages = await db.messages.find(
         {"session_id": session_id}
+    ).sort(
+        "timestamp",
+        1
     ).to_list(None)
 
     if not messages:

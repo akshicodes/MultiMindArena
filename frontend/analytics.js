@@ -60,7 +60,10 @@ const totalMessages =
 
         // Message Leaderboard Chart
         renderMessageChart(data.message_counts);
-        renderSentimentChart(data.avg_sentiment);
+       renderSentimentChart(
+    data.rolling_sentiment || [],
+    data.sentiment_timeline || []
+);
         renderAggressionChart(data.aggression_scores);
         renderWordCloud(data.top_words);
         renderWinPredictor(data.win_score);
@@ -116,10 +119,33 @@ function renderMessageChart(messageCounts) {
     });
 }
 
-function renderSentimentChart(sentiments) {
 
-    const labels = Object.keys(sentiments);
-    const values = Object.values(sentiments);
+function renderSentimentChart(
+    rollingTimeline,
+    sentimentTimeline
+) {
+
+    if (
+        !rollingTimeline ||
+        rollingTimeline.length === 0
+    ) {
+        return;
+    }
+
+    const labels =
+        rollingTimeline.map(
+            item => item.turn
+        );
+
+    const rollingValues =
+        rollingTimeline.map(
+            item => item.value
+        );
+
+    const rawValues =
+        sentimentTimeline.map(
+            item => item.sentiment
+        );
 
     const ctx = document
         .getElementById("sentimentChart")
@@ -130,19 +156,50 @@ function renderSentimentChart(sentiments) {
     }
 
     sentimentChart = new Chart(ctx, {
-        type: "bar",
+
+        type: "line",
+
         data: {
-            labels: labels,
-            datasets: [{
-                label: "Average Sentiment",
-                data: values,
-                borderWidth: 1
-            }]
+
+            labels,
+
+            datasets: [
+
+                {
+                    label:
+                        "Rolling Average",
+
+                    data:
+                        rollingValues,
+
+                    borderWidth: 3,
+
+                    tension: 0.3
+                },
+
+                {
+                    label:
+                        "Raw Sentiment",
+
+                    data:
+                        rawValues,
+
+                    borderWidth: 2,
+
+                    tension: 0.1
+                }
+            ]
         },
+
         options: {
+
             responsive: true,
-            maintainAspectRatio: false,
+
+            maintainAspectRatio:
+                false,
+
             scales: {
+
                 y: {
                     min: -1,
                     max: 1

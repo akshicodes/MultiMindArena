@@ -10,6 +10,10 @@ class AnalyticsModel(BaseModel):
 
     avg_sentiment: dict[str, float]
 
+    sentiment_timeline: list[dict]
+
+    rolling_sentiment: list[dict]
+
     aggression_scores: dict[str, int]
 
     topic_drift_score: float
