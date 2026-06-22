@@ -43,7 +43,6 @@
 
       <div id="transcript" class="transcript"></div>
     </section>
-    <div id="transcript"></div>
 <div id="typing-indicator"></div>
 
     <section class="panel composer-panel">
@@ -57,8 +56,119 @@
         <button id="sendMessageBtn" class="primary" disabled>Send</button>
       </div>
     </section>
+
+   
+  <h1>MultiMind Arena Analytics Dashboard</h1>
+<!-- Summary Cards -->
+<div class="summary">
+    <div class="card">
+        <h3>Session ID</h3>
+        <p id="session-id">Loading...</p>
+    </div>
+
+    <div class="card">
+        <h3>Total Messages</h3>
+        <p id="total-messages">0</p>
+    </div>
+</div>
+
+<h2>Message Leaderboard</h2>
+
+<div
+    style="
+        background:white;
+        padding:20px;
+        border-radius:12px;
+        width:800px;
+        height:400px;
+    "
+>
+    <canvas id="messageChart"></canvas>
+</div>
+
+<h2>Sentiment Over Time</h2>
+
+<div
+    style="
+        background:white;
+        padding:20px;
+        border-radius:12px;
+        width:800px;
+        height:400px;
+        margin-top:20px;
+    "
+>
+    <canvas id="sentimentChart"></canvas>
+</div>
+
+<h2>Aggression Index</h2>
+
+<div
+    style="
+        background:white;
+        padding:20px;
+        border-radius:12px;
+        width:800px;
+        height:400px;
+        margin-top:20px;
+    "
+>
+    <canvas id="aggressionChart"></canvas>
+</div>
+
+<h2>Word Cloud</h2>
+
+<div
+    style="
+        background:white;
+        border-radius:12px;
+        width:800px;
+        height:500px;
+        margin-top:20px;
+        padding:20px;
+    "
+>
+    <canvas
+        id="wordCloudCanvas"
+        width="760"
+        height="460">
+    </canvas>
+</div>
+
+<h2>🏆 Win Predictor</h2>
+
+<div class="card">
+    <h3 id="leader-name">Loading...</h3>
+</div>
+
+<h2>👑 Longest Streak</h2>
+
+<div class="card">
+    <h3 id="streak-leader">Loading...</h3>
+</div>
+
+<h2>📍 Topic Drift</h2>
+
+<div class="card">
+    <h3 id="topic-drift-text">
+        Loading...
+    </h3>
+
+    <progress
+        id="topic-drift-bar"
+        value="0"
+        max="100"
+        style="width:300px;">
+    </progress>
+</div>
   </main>
 
-  <script src="/static/chat.js?v=3"></script>
+  
+
+ <script src="/static/chat.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+<script src="/static/analytics.js"></script>
+
 </body>
 </html>
