@@ -31,12 +31,12 @@ class EdgeTTSProvider(TTSProvider):
     EDGE_VOICE_MAP = {
         "GPT": "en-US-AriaNeural",
         "Gemini": "en-US-JennyNeural",
-        "Nemotron": "en-GB-SoniaNeural",
+        "Llama": "en-GB-SoniaNeural",
         "Step": "en-US-GuyNeural",
     }
 
     def get_voice(self, speaker: str) -> str:
-        return self.EDGE_VOICE_MAP.get(speaker, speaker)
+        return self.EDGE_VOICE_MAP.get(speaker, "en-US-AriaNeural")
 
     async def generate(self, text: str, speaker: str, output_path: Path) -> Path:
         import edge_tts
@@ -51,17 +51,17 @@ class EdgeTTSProvider(TTSProvider):
 class ElevenLabsProvider(TTSProvider):
     name = "elevenlabs"
     ELEVENLABS_VOICE_MAP = {
-        "GPT": "GPT",
-        "Gemini": "Gemini",
-        "Nemotron": "Nemotron",
-        "Step": "Step",
+    "GPT": "JBFqnCBsd6RMkjVDRZzb",      # George
+    "Gemini": "EXAVITQu4vr4xnSDxMaL",   # Sarah
+    "Llama": "IKne3meq5aSn9XLyUdCD",    # Charlie
+    "Step": "GBv7mTt0atIp3Br8iCZE",     # Thomas
     }
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or getattr(settings, "elevenlab_api_key", None)
+        self.api_key = settings.elevenlab_api_key if api_key is None else api_key
 
     def get_voice(self, speaker: str) -> str:
-        return self.ELEVENLABS_VOICE_MAP.get(speaker, speaker)
+        return self.ELEVENLABS_VOICE_MAP.get(speaker, "JBFqnCBsd6RMkjVDRZzb")  # Default to George
 
     async def generate(self, text: str, speaker: str, output_path: Path) -> Path:
         if not self.api_key:
@@ -78,7 +78,7 @@ class ElevenLabsProvider(TTSProvider):
                 audio = client.text_to_speech.convert(
                     text=text,
                     voice_id=voice_id,
-                    model_id="eleven_multilingual_v2",
+                    model_id="eleven_flash_v2_5",
                     output_format="mp3_44100_128",
                 )
             elif hasattr(client, "generate"):
