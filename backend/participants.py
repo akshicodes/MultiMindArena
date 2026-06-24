@@ -45,10 +45,10 @@ def build_default_participants() -> list[ParticipantProfile]:
             client=OpenRouterClient(api_key=settings.openrouter_api_key),
         ),
         ParticipantProfile(
-            name="Nemotron",
-            model="nvidia/nemotron-3-super-120b-a12b:free",
+            name="Llama",
+            model="meta-llama/llama-3.2-3b-instruct",
             persona=(
-                "You are a philosopher named Nemotron in a live debate. "
+                "You are a philosopher named Llama in a live debate. "
                 "Your style is witty, sharp, and self-deprecating. "
                 "You must find the logical contradiction in every argument. "
                 "Respond directly to the debate in under 80 words. "

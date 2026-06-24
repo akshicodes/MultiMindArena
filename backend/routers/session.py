@@ -1,19 +1,24 @@
 import asyncio
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from ..debate_engine import DebateEngine
+from ..config import settings
 from ..database import db
+from ..debate_engine import DebateEngine
 from ..models import analytics_model, message_model, session_model
 from ..realtime import session_connection_manager
+from ..tts_service import TTSRequestPayload, TTSService
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 debate_engine = DebateEngine()
+tts_service = TTSService()
 
 
 class UserMessagePayload(BaseModel):
@@ -147,6 +152,27 @@ async def inject_user_message(session_id: UUID, payload: UserMessagePayload):
     )
 
     return {"inserted_id": str(user_message["message_id"]), "message": user_message}
+
+
+@router.post("/tts")
+async def generate_tts(payload: TTSRequestPayload):
+    try:
+        result = await tts_service.generate(
+            text=payload.text,
+            speaker=payload.speaker,
+            provider=payload.provider,
+        )
+        return result
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/tts/audio/{filename}")
+async def get_tts_audio(filename: str):
+    audio_path = Path(__file__).resolve().parent.parent / "data" / "tts_audio" / filename
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Audio not found")
+    return FileResponse(audio_path, media_type="audio/mpeg")
 
 
 @router.websocket("/{session_id}/ws")

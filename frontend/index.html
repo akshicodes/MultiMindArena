@@ -45,6 +45,37 @@
     </section>
 <div id="typing-indicator"></div>
 
+    <section class="panel tts-panel">
+      <div class="panel-header">
+        <h2>Text-to-speech</h2>
+        <span>On-demand audio for finalized messages</span>
+      </div>
+
+      <div class="tts-controls">
+        <label class="toggle-row">
+          <input id="ttsEnable" type="checkbox" checked />
+          <span>Enable TTS</span>
+        </label>
+
+        <label class="field">
+          <span>Provider</span>
+          <select id="ttsProvider">
+            <option value="edge">Edge TTS</option>
+            <option value="elevenlabs">ElevenLabs</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="speaker-grid">
+        <label><input type="checkbox" name="ttsSpeaker" value="GPT" checked /> GPT</label>
+        <label><input type="checkbox" name="ttsSpeaker" value="Gemini" checked /> Gemini</label>
+        <label><input type="checkbox" name="ttsSpeaker" value="Nemotron" checked /> Nemotron</label>
+        <label><input type="checkbox" name="ttsSpeaker" value="Step" checked /> Step</label>
+      </div>
+
+      <div id="ttsHint" class="tts-hint">Audio is generated only after a message is finalized.</div>
+    </section>
+
     <section class="panel composer-panel">
       <div class="panel-header">
         <h2>Inject a user message</h2>
@@ -165,7 +196,7 @@
 
   
 
- <script src="/static/chat.js?v=3"></script>
+ <script src="/static/chat.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
 <script src="/static/analytics.js"></script>
