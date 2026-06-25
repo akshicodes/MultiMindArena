@@ -3,203 +3,259 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Debate Engine Live</title>
+  <title>Multi Mind Arena</title>
   <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Outfit for UI titles, Pacifico for handwritten logo, Plus Jakarta Sans for reading -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Pacifico&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 </head>
-<body>
-  <div class="background-orb orb-1"></div>
-  <div class="background-orb orb-2"></div>
-  <main class="shell">
-    <section class="hero panel">
-      <div class="eyebrow">MultiMind Arena</div>
-      <h1>Live debate session</h1>
-      <p class="lede">Start a topic, watch the transcript stream, and inject your own message into the debate.</p>
+<body class="state-landing">
 
-      <div class="controls">
-        <label class="field grow">
-          <span>Topic</span>
-          <input id="topicInput" type="text" placeholder="Should AI replace teachers?" />
-        </label>
+  <!-- Left Sidebar (Empty, slides from left) -->
+  <div id="leftSidebarOverlay" class="sidebar-overlay"></div>
+  <aside id="leftSidebar" class="left-sidebar">
+    <div class="sidebar-header">
+      <span class="logo-text-handwritten">Multi Mind Arena</span>
+      <button id="closeSidebarBtn" class="close-btn">&times;</button>
+    </div>
+    <div class="sidebar-body">
+      <!-- Empty by request -->
+    </div>
+  </aside>
 
-        <label class="field small">
-          <span>Rounds</span>
-          <input id="roundsInput" type="number" min="1" max="12" value="3" />
-        </label>
+  <!-- Main Rounded Outer Wrapper (Monochrome outlines) -->
+  <div class="outer-container">
+    
+    <!-- 1. LANDING STATE CONTAINER -->
+    <div class="view-landing">
+      <!-- Header with Hamburger and Logo -->
+      <header class="landing-header">
+        <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open Sidebar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <span class="logo-text-handwritten">Multi Mind Arena</span>
+      </header>
+
+      <!-- Center Content -->
+      <div class="landing-hero">
+        <h1 class="landing-title">Multi Mind Arena</h1>
+        
+        <!-- Large Horizontal Topic Input Container -->
+        <div class="topic-box-container">
+          <div class="topic-input-wrapper">
+            <textarea id="topicInput" placeholder="Enter a debate topic here (e.g. Should AI replace teachers?)..." rows="2"></textarea>
+          </div>
+          
+          <div class="topic-controls-row">
+            <!-- Left Group: Dropdowns & Toggle -->
+            <div class="topic-left-controls">
+              <label class="toggle-row">
+                <span class="toggle-label">Enable Voice (TTS)</span>
+                <label class="switch">
+                  <input id="ttsEnable" type="checkbox" checked />
+                  <span class="slider"></span>
+                </label>
+              </label>
+              
+              <div class="control-select-wrap">
+                <span class="select-label">Provider</span>
+                <select id="ttsProvider">
+                  <option value="edge">Edge TTS</option>
+                  <option value="elevenlabs">ElevenLabs</option>
+                </select>
+              </div>
+
+              <div class="control-select-wrap">
+                <span class="select-label">Rounds</span>
+                <select id="roundsInput">
+                  <option value="3" selected>3 Rounds</option>
+                  <option value="5">5 Rounds</option>
+                  <option value="7">7 Rounds</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Right Group: Action Buttons -->
+            <div class="topic-right-controls">
+              <button id="randomTopicBtn" class="btn-outline">Random Topic</button>
+              <button id="startBtn" class="btn-solid">Start Debate</button>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div class="button-row">
-        <button id="startBtn" class="primary">Start debate</button>
-        <button id="randomTopicBtn" class="secondary">
-    Random Topic
-</button>
-        <button id="endDebateBtn" class="secondary" disabled>End debate</button>
-      </div>
-    </section>
-
-    <section id="transcriptPanel" class="panel transcript-panel">
-      <div class="panel-header">
-        <h2>Live transcript</h2>
-      </div>
-
-      <div id="transcript" class="transcript"></div>
-    </section>
-<div id="typing-indicator"></div>
-
-    <section class="panel tts-panel">
-      <div class="panel-header">
-        <h2>Text-to-speech</h2>
-        <span>On-demand audio for finalized messages</span>
-      </div>
-
-      <div class="tts-controls">
-        <label class="toggle-row">
-          <input id="ttsEnable" type="checkbox" checked />
-          <span>Enable TTS</span>
-        </label>
-
-        <label class="field">
-          <span>Provider</span>
-          <select id="ttsProvider">
-            <option value="edge">Edge TTS</option>
-            <option value="elevenlabs">ElevenLabs</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="speaker-grid">
-        <label><input type="checkbox" name="ttsSpeaker" value="GPT" checked /> GPT</label>
-        <label><input type="checkbox" name="ttsSpeaker" value="Gemini" checked /> Gemini</label>
-        <label><input type="checkbox" name="ttsSpeaker" value="Llama" checked /> Llama</label>
-        <label><input type="checkbox" name="ttsSpeaker" value="Step" checked /> Step</label>
-      </div>
-
-      <div id="ttsHint" class="tts-hint">Audio is generated only after a message is finalized.</div>
-    </section>
-
-    <section class="panel composer-panel">
-      <div class="panel-header">
-        <h2>Inject a user message</h2>
-        <span>Optional, once a session is active</span>
-      </div>
-
-      <div class="composer">
-        <input id="userMessageInput" type="text" placeholder="Challenge the room with a quick comment..." />
-        <button id="sendMessageBtn" class="primary" disabled>Send</button>
-      </div>
-    </section>
-
-   
-  <h1>MultiMind Arena Analytics Dashboard</h1>
-<!-- Summary Cards -->
-<div class="summary">
-    <div class="card">
-        <h3>Session ID</h3>
-        <p id="session-id">Loading...</p>
     </div>
 
-    <div class="card">
-        <h3>Total Messages</h3>
-        <p id="total-messages">0</p>
+    <!-- 2. DEBATE STATE CONTAINER -->
+    <div class="view-debate">
+      <!-- 25% LEFT PANEL (Current Speaker Visualizer) -->
+      <aside class="left-speaking-panel">
+        <div class="panel-top-badge">
+          <span class="provider-badge-label">Active TTS</span>
+          <span id="activeTtsBadge" class="provider-badge-value">Edge TTS</span>
+        </div>
+
+        <div class="speaker-visualizer-zone">
+          <!-- Pulser Visualizer -->
+          <div class="visualizer-orb-container">
+            <div id="leftSpeakerOrb" class="voice-orb">
+              <div class="orb-wave wave-1"></div>
+              <div class="orb-wave wave-2"></div>
+              <div class="orb-wave wave-3"></div>
+              <div class="orb-core"></div>
+            </div>
+          </div>
+          
+          <!-- Speaker Identification -->
+          <div class="speaking-details">
+            <span class="speaking-status-tag">Currently Speaking</span>
+            <h2 id="speakingModelName">Idle</h2>
+          </div>
+        </div>
+
+        <div class="panel-bottom-actions">
+          <!-- Stop TTS button -->
+          <button id="stopTtsBtn" class="btn-outline btn-stop-tts">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+            Stop TTS
+          </button>
+        </div>
+      </aside>
+
+      <!-- 75% RIGHT PANEL (Debate Arena Space) -->
+      <section class="right-arena-panel">
+        
+        <!-- Top Bar -->
+        <header class="arena-top-bar">
+          <div class="arena-bar-left">
+            <span class="logo-text-handwritten size-sm">Multi Mind Arena</span>
+            <span class="arena-status-dot"></span>
+          </div>
+          
+          <!-- Progress Bar Indicator -->
+          <div class="arena-progress-container">
+            <span id="debateProgressText" class="progress-percent">0% Completed</span>
+            <div class="progress-track">
+              <div id="debateProgressBar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="arena-bar-right">
+            <button id="openAnalyticsBtn" class="btn-outline btn-analytics-toggle">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+              Analytics
+            </button>
+            <!-- Original button to end debate mapped into the right header -->
+            <button id="endDebateBtn" class="btn-outline btn-end-debate" disabled>End Debate</button>
+          </div>
+        </header>
+
+        <!-- Debate Arena Message List -->
+        <div id="transcript" class="debate-transcript-pane"></div>
+
+        <div id="typing-indicator" class="typing-alert-bar"></div>
+
+        <!-- User Input Area (Bottom Fixed Position) -->
+        <div class="composer-container-fixed">
+          <div class="composer-body">
+            <input id="userMessageInput" type="text" placeholder="Type a comment or challenge to inject into the debate..." />
+            <button id="sendMessageBtn" class="send-arrow-btn" disabled aria-label="Send Message">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+        </div>
+
+      </section>
     </div>
-</div>
 
-<h2>Message Leaderboard</h2>
+    <!-- 3. ANALYTICS RIGHT DRAWER (Slides from right, overlays debate) -->
+    <div id="analyticsOverlay" class="drawer-overlay"></div>
+    <aside id="analyticsSidebar" class="right-analytics-drawer">
+      <div class="drawer-header">
+        <h3>Arena Analytics</h3>
+        <button id="closeAnalyticsBtn" class="close-btn">&times;</button>
+      </div>
 
-<div
-    style="
-        background:white;
-        padding:20px;
-        border-radius:12px;
-        width:800px;
-        height:400px;
-    "
->
-    <canvas id="messageChart"></canvas>
-</div>
+      <div class="drawer-content-scroll">
+        <!-- Message Leaderboard Chart Card -->
+        <div class="drawer-chart-card">
+          <h4>Message Leaderboard</h4>
+          <div class="drawer-canvas-container">
+            <canvas id="messageChart"></canvas>
+          </div>
+        </div>
 
-<h2>Sentiment Over Time</h2>
+        <!-- Sentiment Over Time Chart Card -->
+        <div class="drawer-chart-card">
+          <h4>Sentiment Over Time</h4>
+          <div class="drawer-canvas-container">
+            <canvas id="sentimentChart"></canvas>
+          </div>
+        </div>
 
-<div
-    style="
-        background:white;
-        padding:20px;
-        border-radius:12px;
-        width:800px;
-        height:400px;
-        margin-top:20px;
-    "
->
-    <canvas id="sentimentChart"></canvas>
-</div>
+        <!-- Aggression Index Chart Card -->
+        <div class="drawer-chart-card">
+          <h4>Aggression Index</h4>
+          <div class="drawer-canvas-container">
+            <canvas id="aggressionChart"></canvas>
+          </div>
+        </div>
 
-<h2>Aggression Index</h2>
+        <!-- Word Cloud Chart Card -->
+        <div class="drawer-chart-card wordcloud-card">
+          <h4>Key Topics (Word Cloud)</h4>
+          <div class="drawer-canvas-container font-black-bg">
+            <canvas id="wordCloudCanvas" width="760" height="460"></canvas>
+          </div>
+        </div>
 
-<div
-    style="
-        background:white;
-        padding:20px;
-        border-radius:12px;
-        width:800px;
-        height:400px;
-        margin-top:20px;
-    "
->
-    <canvas id="aggressionChart"></canvas>
-</div>
+        <!-- Win Predictor Stats Card -->
+        <div class="drawer-stats-card">
+          <h4>🏆 Win Predictor</h4>
+          <p id="leader-name" class="stats-result-text">Loading...</p>
+        </div>
 
-<h2>Word Cloud</h2>
+        <!-- Longest Streak Stats Card -->
+        <div class="drawer-stats-card">
+          <h4>👑 Longest Streak</h4>
+          <p id="streak-leader" class="stats-result-text">Loading...</p>
+        </div>
 
-<div
-    style="
-        background:white;
-        border-radius:12px;
-        width:800px;
-        height:500px;
-        margin-top:20px;
-        padding:20px;
-    "
->
-    <canvas
-        id="wordCloudCanvas"
-        width="760"
-        height="460">
-    </canvas>
-</div>
+        <!-- Topic Drift Stats Card -->
+        <div class="drawer-stats-card">
+          <h4>📍 Topic Drift</h4>
+          <div class="drift-box">
+            <p id="topic-drift-text" class="drift-result-text">Loading...</p>
+            <progress id="topic-drift-bar" value="0" max="100"></progress>
+          </div>
+        </div>
+      </div>
+    </aside>
 
-<h2>🏆 Win Predictor</h2>
+  </div>
 
-<div class="card">
-    <h3 id="leader-name">Loading...</h3>
-</div>
+  <!-- Hidden triggers and containers to preserve JS mappings without console errors -->
+  <div style="display: none !important;">
+    <input type="checkbox" name="ttsSpeaker" value="GPT" checked />
+    <input type="checkbox" name="ttsSpeaker" value="Gemini" checked />
+    <input type="checkbox" name="ttsSpeaker" value="Llama" checked />
+    <input type="checkbox" name="ttsSpeaker" value="Step" checked />
+    <span id="session-id"></span>
+    <span id="total-messages"></span>
+    <div id="sessionStatus">
+      <span class="status-dot"></span>
+      <span id="statusText"></span>
+    </div>
+    <div id="ttsHint"></div>
+  </div>
 
-<h2>👑 Longest Streak</h2>
-
-<div class="card">
-    <h3 id="streak-leader">Loading...</h3>
-</div>
-
-<h2>📍 Topic Drift</h2>
-
-<div class="card">
-    <h3 id="topic-drift-text">
-        Loading...
-    </h3>
-
-    <progress
-        id="topic-drift-bar"
-        value="0"
-        max="100"
-        style="width:300px;">
-    </progress>
-</div>
-  </main>
-
-  
-
- <script src="/static/chat.js?v=4"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
-<script src="/static/analytics.js"></script>
-
+  <!-- Base JS load -->
+  <script src="/static/js/chat-vars.js"></script>
+  <script src="/static/js/chat-components.js"></script>
+  <script src="/static/js/chat-api.js"></script>
+  <script src="/static/js/ui-controller.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+  <script src="/static/analytics.js"></script>
 </body>
 </html>
