@@ -3,26 +3,32 @@
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Sidebar Slide Controls (Left hamburger sidebar)
   const hamburgerBtn = document.getElementById("hamburgerBtn");
+  const debateHamburgerBtn =
+    document.getElementById("debateHamburgerBtn");
   const leftSidebar = document.getElementById("leftSidebar");
   const leftSidebarOverlay = document.getElementById("leftSidebarOverlay");
   const closeSidebarBtn = document.getElementById("closeSidebarBtn");
 
-  if (hamburgerBtn && leftSidebar && leftSidebarOverlay) {
+  if (leftSidebar && leftSidebarOverlay) {
+
     const openSidebar = () => {
-      leftSidebar.classList.add("open");
-      leftSidebarOverlay.classList.add("visible");
-    };
-    const closeSidebar = () => {
-      leftSidebar.classList.remove("open");
-      leftSidebarOverlay.classList.remove("visible");
+        leftSidebar.classList.add("open");
+        leftSidebarOverlay.classList.add("visible");
     };
 
-    hamburgerBtn.addEventListener("click", openSidebar);
+    const closeSidebar = () => {
+        leftSidebar.classList.remove("open");
+        leftSidebarOverlay.classList.remove("visible");
+    };
+
+    hamburgerBtn?.addEventListener("click", openSidebar);
+
+    debateHamburgerBtn?.addEventListener("click", openSidebar);
+
     leftSidebarOverlay.addEventListener("click", closeSidebar);
-    if (closeSidebarBtn) {
-      closeSidebarBtn.addEventListener("click", closeSidebar);
-    }
-  }
+
+    closeSidebarBtn?.addEventListener("click", closeSidebar);
+}
 
   // 2. Right Analytics Drawer Toggle Controls
   const openAnalyticsBtn = document.getElementById("openAnalyticsBtn");

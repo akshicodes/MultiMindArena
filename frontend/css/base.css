@@ -96,6 +96,47 @@ body.state-debate .view-debate {
   flex-direction: column;
 }
 
+.history-item{
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:10px;
+
+    padding:12px;
+
+    margin-top:10px;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.history-item:hover{
+
+    background:#161616;
+
+}
+
+.history-topic{
+
+    font-weight:600;
+
+    color:white;
+
+    font-size:.9rem;
+
+}
+
+.history-meta{
+
+    margin-top:6px;
+
+    color:#999;
+
+    font-size:.72rem;
+
+}
+
 .left-sidebar.open {
   left: 0;
 }
@@ -106,6 +147,14 @@ body.state-debate .view-debate {
   align-items: center;
   border-bottom: 1px solid var(--white-outline);
   padding-bottom: 1rem;
+}
+.sidebar-actions{
+    padding:16px 0;
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.new-debate-btn{
+    width:100%;
 }
 
 .close-btn {

@@ -78,6 +78,27 @@ async def run_debate(session_id: UUID, payload: StartDebatePayload):
         "status": "started",
         "rounds": payload.rounds,
     }
+@router.get("")
+async def list_sessions():
+
+    cursor = (
+        db.sessions
+        .find(
+            {},
+            {
+                "_id": 0,
+                "session_id": 1,
+                "topic": 1,
+                "started_at": 1,
+                "ended_at": 1,
+                "status": 1,
+                "total_messages": 1,
+            },
+        )
+        .sort("started_at", -1)
+    )
+
+    return await cursor.to_list(length=100)
 
 
 @router.get("/{session_id}")

@@ -19,9 +19,21 @@
       <span class="logo-text-handwritten">Multi Mind Arena</span>
       <button id="closeSidebarBtn" class="close-btn">&times;</button>
     </div>
-    <div class="sidebar-body">
-      <!-- Empty by request -->
-    </div>
+
+  <div class="sidebar-actions">
+    <button
+        id="newDebateBtn"
+        class="btn-solid new-debate-btn">
+
+        + New Debate
+
+    </button>
+  </div>
+   
+    <div
+    id="historyList"
+    class="sidebar-body">
+</div>
   </aside>
 
   <!-- Main Rounded Outer Wrapper (Monochrome outlines) -->
@@ -131,10 +143,39 @@
         
         <!-- Top Bar -->
         <header class="arena-top-bar">
-          <div class="arena-bar-left">
-            <span class="logo-text-handwritten size-sm">Multi Mind Arena</span>
-            <span class="arena-status-dot"></span>
-          </div>
+
+    <div class="arena-bar-left">
+
+        <button
+            id="debateHamburgerBtn"
+            class="hamburger-btn"
+            aria-label="Open Sidebar">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="22"
+                 height="22"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+
+            </svg>
+
+        </button>
+
+        <span class="logo-text-handwritten size-sm">
+            Multi Mind Arena
+        </span>
+
+        <span class="arena-status-dot"></span>
+
+    </div>
           
           <!-- Progress Bar Indicator -->
           <div class="arena-progress-container">
@@ -257,7 +298,7 @@
   <script src="/static/js/chat-vars.js?v=1.1"></script>
   <script src="/static/js/chat-components.js?v=1.1"></script>
   <script src="/static/js/chat-api.js?v=1.1"></script>
-  <script src="/static/js/ui-controller.js?v=1.1"></script>
+  <script src="/static/js/ui-controller.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
   <script src="/static/analytics.js"></script>

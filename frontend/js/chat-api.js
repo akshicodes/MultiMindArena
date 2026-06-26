@@ -104,17 +104,24 @@ function connectWebSocket(sessionId) {
   };
 }
 
-function setActiveSession(sessionId) {
-  activeSessionId = sessionId;
+function setActiveSession(sessionId, readOnly = false) {
 
-  if (sessionId) {
-    localStorage.setItem("activeSessionId", sessionId);
-  } else {
-    localStorage.removeItem("activeSessionId");
-  }
+    activeSessionId = sessionId;
 
-  if (sendMessageBtn) sendMessageBtn.disabled = !sessionId;
-  if (endDebateBtn) endDebateBtn.disabled = !sessionId;
+    if (sessionId) {
+        localStorage.setItem("activeSessionId", sessionId);
+    } else {
+        localStorage.removeItem("activeSessionId");
+    }
+
+    if (sendMessageBtn)
+        sendMessageBtn.disabled = !sessionId || readOnly;
+
+    if (endDebateBtn)
+        endDebateBtn.disabled = !sessionId || readOnly;
+
+    if (userMessageInput)
+        userMessageInput.disabled = !sessionId || readOnly;
 }
 
 async function pollSessionMessages(sessionId) {
@@ -239,6 +246,165 @@ async function sendUserMessage() {
   }
 }
 
+async function loadHistory() {
+
+    try {
+
+        const response =
+            await fetch("/sessions");
+
+        if (!response.ok)
+            throw new Error("Couldn't load history");
+
+        const sessions =
+            await response.json();
+
+        renderHistory(sessions);
+
+    } catch (err) {
+
+        console.error(err);
+
+    }
+
+}
+
+
+function formatHistoryTime(dateString) {
+
+    const date = new Date(dateString);
+    const now = new Date();
+
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+
+    if (date.toDateString() === now.toDateString()) {
+        return `Today • ${date.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit"
+        })}`;
+    }
+
+    if (date.toDateString() === yesterday.toDateString()) {
+        return `Yesterday • ${date.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit"
+        })}`;
+    }
+
+    return `${date.toLocaleDateString([], {
+        day: "numeric",
+        month: "short"
+    })} • ${date.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit"
+    })}`;
+}
+function renderHistory(sessions) {
+
+    const history =
+        document.getElementById("historyList");
+        
+
+    if (!history)
+        return;
+
+    history.innerHTML = "";
+
+    sessions.forEach(session => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "history-item";
+            item.dataset.sessionId = session.session_id;
+item.dataset.status = session.status;
+
+        item.innerHTML = `
+    <div class="history-topic">
+        ${session.topic}
+    </div>
+
+    <div class="history-meta">
+        ${formatHistoryTime(session.started_at)}
+    </div>
+`;
+
+item.addEventListener("click", () => {
+    openHistorySession(
+        session.session_id,
+        session.status
+    );
+});
+
+        history.appendChild(item);
+
+    });
+
+}
+
+
+
+async function openHistorySession(sessionId) {
+
+    try {
+
+        const response =
+            await fetch(`/sessions/${sessionId}/messages?limit=200`);
+
+        if (!response.ok)
+            throw new Error("Couldn't load messages");
+
+        const data =
+            await response.json();
+
+          transcript.innerHTML = "";
+
+        streamNodes.clear();
+        setActiveSession(sessionId, true);
+
+        renderMessages(data.messages);
+
+        document.body.className = "state-debate";
+
+
+    } catch(err){
+
+        console.error(err);
+
+    }
+
+}
+
+function startNewDebate() {
+  console.log("STEP 1");
+    // Close the sidebar
+    document
+        .getElementById("leftSidebar")
+        ?.classList.remove("open");
+
+    document
+        .getElementById("leftSidebarOverlay")
+        ?.classList.remove("visible");
+
+    // Clear transcript
+    transcript.innerHTML = "";
+    streamNodes.clear();
+
+    // Clear current session
+    setActiveSession(null);
+
+    // Clear input
+    if (userMessageInput) {
+        userMessageInput.value = "";
+    }
+
+    // Return to landing page
+    document.body.className = "state-landing";
+
+}
+
 // Bind Action Listeners
 if (startBtn) {
   startBtn.addEventListener("click", () => {
@@ -282,4 +448,25 @@ if (endDebateBtn) {
   endDebateBtn.addEventListener("click", () => {
     endDebate().catch((error) => console.error(error.message));
   });
+}
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        loadHistory();
+
+    }
+);
+
+const newDebateBtn =
+    document.getElementById("newDebateBtn");
+
+if (newDebateBtn) {
+
+    newDebateBtn.addEventListener(
+        "click",
+        startNewDebate
+    );
+
 }
