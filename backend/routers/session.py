@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+import tempfile
 from pathlib import Path
 from typing import Optional
 from uuid import UUID, uuid4
@@ -169,10 +170,36 @@ async def generate_tts(payload: TTSRequestPayload):
 
 @router.get("/tts/audio/{filename}")
 async def get_tts_audio(filename: str):
-    audio_path = Path(__file__).resolve().parent.parent / "data" / "tts_audio" / filename
+    audio_path = Path(tempfile.gettempdir()) / "debate_tts_temp" / filename
     if not audio_path.exists():
         raise HTTPException(status_code=404, detail="Audio not found")
     return FileResponse(audio_path, media_type="audio/mpeg")
+
+
+@router.delete("/tts/audio/{filename}")
+async def delete_tts_audio(filename: str):
+    audio_path = Path(tempfile.gettempdir()) / "debate_tts_temp" / filename
+    if audio_path.exists():
+        try:
+            audio_path.unlink()
+            return {"status": "deleted"}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
+    raise HTTPException(status_code=404, detail="File not found")
+
+
+async def periodic_cleanup():
+    while True:
+        try:
+            tts_service.cleanup_old_files(max_age_seconds=300)
+        except Exception as e:
+            print(f"Error in periodic cleanup: {e}")
+        await asyncio.sleep(60)
+
+
+@router.on_event("startup")
+async def startup_event():
+    asyncio.create_task(periodic_cleanup())
 
 
 @router.websocket("/{session_id}/ws")

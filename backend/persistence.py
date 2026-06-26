@@ -40,6 +40,7 @@ async def persist_message(
     api_latency_ms: int,
     msg_type: str,
     *,
+    message_id: str | None = None,
     turn_index: int | None = None,
     tags: list[str] | None = None,
     addressed_to: str | None = None,
@@ -50,7 +51,7 @@ async def persist_message(
     sentiment = calculate_sentiment(content)
     print("SENTIMENT DEBUG:", sentiment)
     document: dict[str, Any] = {
-        "message_id": str(uuid4()),
+        "message_id": message_id or str(uuid4()),
         "session_id": state.session_id,
         "sender": speaker,
         "content": content,

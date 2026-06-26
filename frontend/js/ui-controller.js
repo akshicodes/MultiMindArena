@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const speakingModelNameEl = document.getElementById("speakingModelName");
   const leftSpeakerOrbEl = document.getElementById("leftSpeakerOrb");
 
-  const updateSpeakingLLM = (speaker) => {
+  window.updateSpeakingLLM = (speaker) => {
     if (!speaker || speaker.toLowerCase() === "system") {
       return;
     }
@@ -125,21 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Observe when typing indicator is active
-  if (typingIndicatorEl) {
-    const typingObserver = new MutationObserver(() => {
-      const text = typingIndicatorEl.textContent.trim();
-      if (text) {
-        // Text is format: "Gemini is thinking..."
-        const parts = text.split(" ");
-        if (parts.length > 0) {
-          updateSpeakingLLM(parts[0]);
-        }
-      }
-    });
-    typingObserver.observe(typingIndicatorEl, { childList: true, characterData: true, subtree: true });
-  }
-
   // Observe newly inserted message items in the transcript
   if (transcriptEl) {
     const tagNode = (node) => {
@@ -149,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (speakerEl) {
           const speakerName = speakerEl.textContent.trim();
           node.setAttribute("data-speaker", speakerName);
-          updateSpeakingLLM(speakerName);
         }
       }
     };

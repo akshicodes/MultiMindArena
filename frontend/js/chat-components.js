@@ -61,6 +61,14 @@ function enqueueAudio(item) {
   }
 }
 
+async function deleteAudioFile(audioUrl) {
+  try {
+    await fetch(audioUrl, { method: "DELETE" });
+  } catch (error) {
+    console.error("Failed to delete temporary audio file:", error);
+  }
+}
+
 async function processAudioQueue() {
   if (audioPlaybackInProgress || audioQueue.length === 0) {
     return;
@@ -80,18 +88,25 @@ async function processAudioQueue() {
     audio.onended = () => {
       audioPlaybackInProgress = false;
       setMessageTtsStatus(item.messageKey, "", "");
+      void deleteAudioFile(item.audioUrl);
       void processAudioQueue();
     };
     audio.onerror = () => {
       audioPlaybackInProgress = false;
       setMessageTtsStatus(item.messageKey, "Playback failed", "error");
+      void deleteAudioFile(item.audioUrl);
       void processAudioQueue();
     };
+
+    if (typeof window.updateSpeakingLLM === "function" && item.speaker) {
+      window.updateSpeakingLLM(item.speaker);
+    }
 
     await audio.play();
   } catch (error) {
     audioPlaybackInProgress = false;
     setMessageTtsStatus(item.messageKey, "Playback blocked", "error");
+    void deleteAudioFile(item.audioUrl);
     void processAudioQueue();
   }
 }
@@ -142,6 +157,50 @@ async function playTtsForMessage(message, options = {}) {
     });
   } catch (error) {
     setMessageTtsStatus(messageKey, error.message || "TTS unavailable", "error");
+  }
+}
+
+async function playTtsForChunk(messageKey, speaker, chunkContent, options = {}) {
+  if (!chunkContent) {
+    return;
+  }
+
+  if (!options.force && !ttsEnableCheckbox?.checked) {
+    return;
+  }
+
+  if (!options.force && !isSpeakerEnabledForTts(speaker)) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/sessions/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider: ttsProviderSelect?.value || "edge",
+        speaker,
+        text: chunkContent,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTS chunk failed: ${response.status}`);
+    }
+
+    const payload = await response.json();
+    if (!payload?.audio_url) {
+      throw new Error("No audio URL returned for chunk");
+    }
+
+    enqueueAudio({
+      messageKey,
+      audioUrl: payload.audio_url,
+      speaker,
+    });
+  } catch (error) {
+    console.error("TTS chunk error:", error);
+    setMessageTtsStatus(messageKey, error.message || "TTS chunk unavailable", "error");
   }
 }
 

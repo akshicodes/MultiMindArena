@@ -1,5 +1,7 @@
 /* js/chat-api.js - WebSocket & Session HTTP API Operations */
 
+const ttsStreamState = {};
+
 function connectWebSocket(sessionId) {
   if (socket) {
     socket.close();
@@ -29,6 +31,30 @@ function connectWebSocket(sessionId) {
 
     if (payload.event === "message.stream") {
       removeTypingIndicator();
+      
+      const speaker = payload.speaker;
+      const messageId = payload.message_id;
+      const content = payload.content;
+
+      if (speaker && speaker !== "User" && isSpeakerEnabledForTts(speaker) && ttsEnableCheckbox?.checked) {
+        if (!ttsStreamState[messageId]) {
+          ttsStreamState[messageId] = { processedLength: 0 };
+        }
+        
+        const state = ttsStreamState[messageId];
+        const unprocessedText = content.substring(state.processedLength);
+        
+        // Match up to the last sentence boundary in the unprocessed text
+        const match = unprocessedText.match(/.*[.!?\n](?=\s|$)/s);
+        
+        if (match) {
+          const chunk = match[0];
+          state.processedLength += chunk.length;
+          if (chunk.trim()) {
+            void playTtsForChunk(messageId, speaker, chunk.trim(), { auto: true });
+          }
+        }
+      }
       return;
     }
 
@@ -43,8 +69,25 @@ function connectWebSocket(sessionId) {
 
       if (payload.message) {
         appendStaticMessage(payload.message);
-        if (speaker && speaker !== "User") {
-          void playTtsForMessage(payload.message, { auto: true });
+        
+        if (speaker && speaker !== "User" && isSpeakerEnabledForTts(speaker) && ttsEnableCheckbox?.checked) {
+          const messageId = payload.message.message_id || payload.message_id;
+          const content = payload.message.content || "";
+          if (messageId) {
+            const state = ttsStreamState[messageId];
+            const processedLength = state ? state.processedLength : 0;
+            
+            if (processedLength < content.length) {
+              const chunk = content.substring(processedLength);
+              if (chunk.trim()) {
+                void playTtsForChunk(messageId, speaker, chunk.trim(), { auto: true });
+              }
+            }
+            
+            if (state) {
+              delete ttsStreamState[messageId];
+            }
+          }
         }
       }
 
@@ -211,8 +254,19 @@ if (sendMessageBtn) {
 
 if (randomTopicBtn) {
   randomTopicBtn.addEventListener("click", () => {
-    if (topicInput) topicInput.value = "";
-    startDebate().catch((error) => console.error(error.message));
+    fetch("/topics/random")
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.topic && topicInput) {
+          topicInput.value = data.topic;
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching random topic:", error);
+      });
   });
 }
 

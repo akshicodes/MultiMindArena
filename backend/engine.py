@@ -302,6 +302,7 @@ class DebateEngine:
                 content=normalized,
                 api_latency_ms=latency_ms,
                 msg_type="argument",
+                message_id=message_id,
             )
 
             for participant in self.participants:

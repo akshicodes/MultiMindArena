@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import time
+import tempfile
+from uuid import uuid4
 from pathlib import Path
 from typing import Optional
 
@@ -106,7 +108,7 @@ class ElevenLabsProvider(TTSProvider):
 
 class TTSService:
     def __init__(self, cache_dir: Optional[Path] = None, default_provider: Optional[str] = None):
-        base_dir = cache_dir or Path(__file__).resolve().parent / "data" / "tts_audio"
+        base_dir = cache_dir or Path(tempfile.gettempdir()) / "debate_tts_temp"
         self.cache_dir = base_dir
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.default_provider = (default_provider or getattr(settings, "tts_default_provider", "edge") or "edge").lower()
@@ -119,13 +121,13 @@ class TTSService:
         return EdgeTTSProvider()
 
     def _build_output_path(self, text: str, speaker: str, provider_name: str) -> Path:
-        digest = hashlib.sha256(f"{provider_name}:{speaker}:{text}".encode("utf-8")).hexdigest()[:16]
-        return self.cache_dir / f"{provider_name}-{speaker}-{digest}.mp3"
+        unique_id = uuid4().hex[:12]
+        return self.cache_dir / f"{provider_name}-{speaker}-{unique_id}.mp3"
 
     def _build_audio_url(self, output_path: Path) -> str:
         return f"/sessions/tts/audio/{output_path.name}"
 
-    def cleanup_old_files(self, max_age_seconds: int = 1800) -> None:
+    def cleanup_old_files(self, max_age_seconds: int = 600) -> None:
         if not self.cache_dir.exists():
             return
         cutoff = time.time() - max_age_seconds
