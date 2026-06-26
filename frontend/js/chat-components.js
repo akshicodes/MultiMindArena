@@ -54,7 +54,31 @@ function setMessageTtsStatus(key, status, variant = "") {
   }
 }
 
+let currentAudioInstance = null;
+
+function stopAllAudio() {
+  audioQueue.length = 0;
+  if (currentAudioInstance) {
+    try {
+      currentAudioInstance.pause();
+      currentAudioInstance.currentTime = 0;
+    } catch (e) {
+      console.error("Error stopping current audio instance:", e);
+    }
+    currentAudioInstance = null;
+  }
+  audioPlaybackInProgress = false;
+  if (typeof window.updateSpeakingLLM === "function") {
+    window.updateSpeakingLLM("Idle");
+  }
+}
+
+window.stopAllAudio = stopAllAudio;
+
 function enqueueAudio(item) {
+  if (item.isAutoplay && !activeSessionId) {
+    return;
+  }
   audioQueue.push(item);
   if (!audioPlaybackInProgress) {
     void processAudioQueue();
@@ -84,15 +108,18 @@ async function processAudioQueue() {
 
   try {
     const audio = new Audio(item.audioUrl);
+    currentAudioInstance = audio;
     audio.preload = "auto";
     audio.onended = () => {
       audioPlaybackInProgress = false;
+      currentAudioInstance = null;
       setMessageTtsStatus(item.messageKey, "", "");
       void deleteAudioFile(item.audioUrl);
       void processAudioQueue();
     };
     audio.onerror = () => {
       audioPlaybackInProgress = false;
+      currentAudioInstance = null;
       setMessageTtsStatus(item.messageKey, "Playback failed", "error");
       void deleteAudioFile(item.audioUrl);
       void processAudioQueue();
@@ -105,6 +132,7 @@ async function processAudioQueue() {
     await audio.play();
   } catch (error) {
     audioPlaybackInProgress = false;
+    currentAudioInstance = null;
     setMessageTtsStatus(item.messageKey, "Playback blocked", "error");
     void deleteAudioFile(item.audioUrl);
     void processAudioQueue();
@@ -154,6 +182,7 @@ async function playTtsForMessage(message, options = {}) {
       messageKey,
       audioUrl: payload.audio_url,
       speaker,
+      isAutoplay: !options.force,
     });
   } catch (error) {
     setMessageTtsStatus(messageKey, error.message || "TTS unavailable", "error");
@@ -197,6 +226,7 @@ async function playTtsForChunk(messageKey, speaker, chunkContent, options = {}) 
       messageKey,
       audioUrl: payload.audio_url,
       speaker,
+      isAutoplay: !options.force,
     });
   } catch (error) {
     console.error("TTS chunk error:", error);

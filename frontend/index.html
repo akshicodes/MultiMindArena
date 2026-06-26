@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Multi Mind Arena</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/styles.css?v=2.2" />
+  <link rel="stylesheet" href="/static/css/debate.css?v=2.2" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Outfit for UI titles, Pacifico for handwritten logo, Plus Jakarta Sans for reading -->
@@ -105,7 +106,8 @@
     <!-- 2. DEBATE STATE CONTAINER -->
     <div class="view-debate">
       <!-- 25% LEFT PANEL (Current Speaker Visualizer) -->
-      <aside class="left-speaking-panel">
+      <aside class="left-speaking-panel" style="position: relative;">
+        <button id="closeSpeakingPanelBtn" class="close-speaking-btn" aria-label="Close Speaker Panel" onclick="document.querySelector('.view-debate').classList.add('speaking-panel-closed')" style="position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.7); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100; transition: all 0.2s ease; line-height: 1; padding: 0; outline: none;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.color='#fff';" onmouseout="this.style.background='rgba(0, 0, 0, 0.4)'; this.style.color='rgba(255, 255, 255, 0.7)';">&times;</button>
         <div class="panel-top-badge">
           <span class="provider-badge-label">Active TTS</span>
           <span id="activeTtsBadge" class="provider-badge-value">Edge TTS</span>
@@ -174,16 +176,11 @@
         </span>
 
         <span class="arena-status-dot"></span>
-
+        <button id="openSpeakingPanelBtn" class="btn-outline btn-show-visualizer" aria-label="Show Visualizer" onclick="document.querySelector('.view-debate').classList.remove('speaking-panel-closed')" style="display: none; margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; height: 32px; align-items: center; gap: 0.25rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+          Show Visualizer
+        </button>
     </div>
-          
-          <!-- Progress Bar Indicator -->
-          <div class="arena-progress-container">
-            <span id="debateProgressText" class="progress-percent">0% Completed</span>
-            <div class="progress-track">
-              <div id="debateProgressBar" class="progress-fill"></div>
-            </div>
-          </div>
 
           <div class="arena-bar-right">
             <button id="openAnalyticsBtn" class="btn-outline btn-analytics-toggle">
@@ -296,9 +293,9 @@
 
   <!-- Base JS load -->
   <script src="/static/js/chat-vars.js?v=1.1"></script>
-  <script src="/static/js/chat-components.js?v=1.1"></script>
-  <script src="/static/js/chat-api.js?v=1.1"></script>
-  <script src="/static/js/ui-controller.js?v=2"></script>
+  <script src="/static/js/chat-components.js?v=1.3"></script>
+  <script src="/static/js/chat-api.js?v=1.4"></script>
+  <script src="/static/js/ui-controller.js?v=2.3"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
   <script src="/static/analytics.js"></script>

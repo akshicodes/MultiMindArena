@@ -31,7 +31,7 @@ class UserMessagePayload(BaseModel):
 
 
 class StartDebatePayload(BaseModel):
-    topic: Optional[str] = None
+    topic: str
     rounds: int = Field(default=3, ge=1, le=12)
 
 
@@ -43,7 +43,9 @@ async def create_session(session: session_model.SessionModel):
 
 @router.post("/start")
 async def start_debate(payload: StartDebatePayload):
-    state = await debate_engine.ensure_state(topic=payload.topic)
+    if not payload.topic or not payload.topic.strip():
+        raise HTTPException(status_code=422, detail="A debate topic is required to start.")
+    state = await debate_engine.ensure_state(topic=payload.topic.strip())
 
     return {
         "session_id": state.session_id,

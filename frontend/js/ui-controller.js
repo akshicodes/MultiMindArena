@@ -119,15 +119,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const leftSpeakerOrbEl = document.getElementById("leftSpeakerOrb");
 
   window.updateSpeakingLLM = (speaker) => {
-    if (!speaker || speaker.toLowerCase() === "system") {
+    if (!speaker) {
+      return;
+    }
+    const lower = speaker.toLowerCase();
+    if (lower === "system") {
       return;
     }
     if (speakingModelNameEl) {
       speakingModelNameEl.textContent = speaker;
-      speakingModelNameEl.className = `speaker-text-${speaker.toLowerCase()}`;
+      speakingModelNameEl.className = lower === "idle" ? "" : `speaker-text-${lower}`;
     }
     if (leftSpeakerOrbEl) {
-      leftSpeakerOrbEl.className = `voice-orb active-${speaker.toLowerCase()}`;
+      leftSpeakerOrbEl.className = lower === "idle" ? "voice-orb" : `voice-orb active-${lower}`;
     }
   };
 
@@ -178,4 +182,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Periodic progress check
   setInterval(recalculateProgress, 1200);
+
+  // 7. Speaker Panel Collapse controls
+  const closeSpeakingPanelBtn = document.getElementById("closeSpeakingPanelBtn");
+  const openSpeakingPanelBtn = document.getElementById("openSpeakingPanelBtn");
+  const viewDebateEl = document.querySelector(".view-debate");
+
+  const toggleSpeakingPanel = (show) => {
+    if (viewDebateEl) {
+      if (show) {
+        viewDebateEl.classList.remove("speaking-panel-closed");
+      } else {
+        viewDebateEl.classList.add("speaking-panel-closed");
+      }
+    }
+  };
+
+  window.toggleSpeakingPanel = toggleSpeakingPanel;
+
+  if (closeSpeakingPanelBtn && openSpeakingPanelBtn && viewDebateEl) {
+    closeSpeakingPanelBtn.addEventListener("click", () => toggleSpeakingPanel(false));
+    openSpeakingPanelBtn.addEventListener("click", () => toggleSpeakingPanel(true));
+  }
 });

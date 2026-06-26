@@ -142,6 +142,107 @@ function startPolling(sessionId) {
   }, 1200);
 }
 
+function showNotification(message) {
+  // Check if container exists, if not create it
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    container.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      pointer-events: none;
+    `;
+    document.body.appendChild(container);
+  }
+
+  // Create toast element
+  const toast = document.createElement("div");
+  toast.className = "custom-toast";
+  toast.style.cssText = `
+    min-width: 280px;
+    max-width: 380px;
+    background-color: #111111;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: 3px solid #ffffff;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+    font-size: 0.88rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  `;
+
+  // Icon
+  const icon = document.createElement("div");
+  icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+  icon.style.cssText = `
+    display: flex;
+    align-items: center;
+    color: #ffffff;
+    flex-shrink: 0;
+  `;
+
+  // Text content
+  const content = document.createElement("div");
+  content.textContent = message;
+  content.style.flex = "1";
+  content.style.fontWeight = "500";
+
+  // Close button
+  const closeBtn = document.createElement("button");
+  closeBtn.innerHTML = "&times;";
+  closeBtn.style.cssText = `
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s;
+  `;
+  closeBtn.onmouseover = () => closeBtn.style.color = '#fff';
+  closeBtn.onmouseout = () => closeBtn.style.color = '#888';
+  closeBtn.onclick = () => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(20px) scale(0.95)";
+    setTimeout(() => toast.remove(), 300);
+  };
+
+  toast.appendChild(icon);
+  toast.appendChild(content);
+  toast.appendChild(closeBtn);
+  container.appendChild(toast);
+
+  // Trigger show transition
+  requestAnimationFrame(() => {
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0) scale(1)";
+  });
+
+  // Auto-remove after 4 seconds
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(20px) scale(0.95)";
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 4000);
+}
+
 function stopPolling() {
   if (pollTimer !== null) {
     window.clearInterval(pollTimer);
@@ -150,7 +251,11 @@ function stopPolling() {
 }
 
 async function startDebate() {
-  const topic = topicInput ? topicInput.value.trim() : null;
+  const topic = topicInput ? topicInput.value.trim() : "";
+  if (!topic) {
+    showNotification("Enter a topic to start the debate.");
+    return;
+  }
   const rounds = Number.parseInt(roundsInput ? roundsInput.value : "3", 10) || 3;
 
   if (startBtn) {
@@ -164,6 +269,11 @@ async function startDebate() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic, rounds }),
     });
+
+    if (response.status === 422) {
+      showNotification("Enter a topic to start the debate.");
+      return;
+    }
 
     if (!response.ok) {
       const errBody = await response.text();
@@ -204,19 +314,36 @@ async function launchDebate(sessionId, rounds) {
 }
 
 async function endDebate() {
-  if (!activeSessionId) {
-    return;
+  // --- Immediate cleanup: stop everything now, don't wait for server ---
+
+  // Capture session ID before we clear it
+  const sessionIdToDelete = activeSessionId;
+
+  // 1. Stop audio playback and clear the queue right away
+  if (typeof window.stopAllAudio === "function") {
+    window.stopAllAudio();
   }
 
-  const response = await fetch(`/sessions/${activeSessionId}`, { method: "DELETE" });
-  if (!response.ok) {
-    throw new Error(`Failed to end session: ${response.status}`);
+  // 2. Close WebSocket so no more text chunks arrive
+  if (socket) {
+    try { socket.close(); } catch (e) { console.error("WS close error:", e); }
+    socket = null;
   }
 
+  // 3. Stop message polling
   stopPolling();
-  setActiveSession(null);
+
+  // 4. Clear session state and navigate to landing page immediately
   pendingLaunch = null;
   launchRequested = false;
+  setActiveSession(null);
+  document.body.className = "state-landing";
+
+  // 5. Fire-and-forget server DELETE (non-blocking)
+  if (sessionIdToDelete) {
+    fetch(`/sessions/${sessionIdToDelete}`, { method: "DELETE" })
+      .catch((e) => console.error("Failed to end session on server:", e));
+  }
 }
 
 async function sendUserMessage() {
