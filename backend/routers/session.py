@@ -31,7 +31,7 @@ class UserMessagePayload(BaseModel):
 
 
 class StartDebatePayload(BaseModel):
-    topic: str
+    topic: Optional[str] = None
     rounds: int = Field(default=3, ge=1, le=12)
 
 
@@ -61,7 +61,12 @@ async def run_debate(session_id: UUID, payload: StartDebatePayload):
     session_key = str(session_id)
     state = debate_engine.session_states.get(session_key)
     if state is None:
-        state = await debate_engine.ensure_state(topic=payload.topic, session_id=session_key)
+        topic = payload.topic
+        if not topic:
+            session = await db.sessions.find_one({"session_id": session_key})
+            if session:
+                topic = session.get("topic")
+        state = await debate_engine.ensure_state(topic=topic, session_id=session_key)
 
     async def broadcaster(payload: dict):
         await session_connection_manager.broadcast(state.session_id, payload)

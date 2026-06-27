@@ -287,8 +287,17 @@ async function startDebate() {
     streamNodes.clear();
     pendingLaunch = { sessionId: payload.session_id, rounds };
     launchRequested = false;
+
+    // Display the active debate topic
+    const topicEl = document.getElementById("arenaTopicDisplay");
+    if (topicEl) {
+      topicEl.textContent = payload.topic || "";
+      topicEl.title = payload.topic || "";
+      topicEl.style.display = "inline-block";
+    }
+
     startPolling(payload.session_id);
-    launchDebate(payload.session_id, rounds).catch((error) => {
+    launchDebate(payload.session_id, payload.topic, rounds).catch((error) => {
       console.error(error.message);
     });
   } catch (error) {
@@ -301,11 +310,11 @@ async function startDebate() {
   }
 }
 
-async function launchDebate(sessionId, rounds) {
+async function launchDebate(sessionId, topic, rounds) {
   const response = await fetch(`/sessions/${sessionId}/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rounds }),
+    body: JSON.stringify({ topic, rounds }),
   });
 
   if (!response.ok) {
@@ -337,6 +346,14 @@ async function endDebate() {
   pendingLaunch = null;
   launchRequested = false;
   setActiveSession(null);
+
+  // Clear/hide the topic display
+  const topicEl = document.getElementById("arenaTopicDisplay");
+  if (topicEl) {
+    topicEl.textContent = "";
+    topicEl.style.display = "none";
+  }
+
   document.body.className = "state-landing";
 
   // 5. Fire-and-forget server DELETE (non-blocking)
@@ -486,6 +503,18 @@ async function openHistorySession(sessionId) {
         const data =
             await response.json();
 
+        // Load the session topic
+        const sessionResponse = await fetch(`/sessions/${sessionId}`);
+        if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            const topicEl = document.getElementById("arenaTopicDisplay");
+            if (topicEl) {
+                topicEl.textContent = sessionData.topic || "";
+                topicEl.title = sessionData.topic || "";
+                topicEl.style.display = "inline-block";
+            }
+        }
+
           transcript.innerHTML = "";
 
         streamNodes.clear();
@@ -525,6 +554,13 @@ function startNewDebate() {
     // Clear input
     if (userMessageInput) {
         userMessageInput.value = "";
+    }
+
+    // Clear/hide the topic display
+    const topicEl = document.getElementById("arenaTopicDisplay");
+    if (topicEl) {
+      topicEl.textContent = "";
+      topicEl.style.display = "none";
     }
 
     // Return to landing page
