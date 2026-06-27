@@ -26,7 +26,7 @@ AGGRESSIVE_WORDS = {
 }
 
 
-def build_analytics(messages):
+def build_analytics(messages, keywords=None):
 
     message_counts = Counter()
 
@@ -138,16 +138,19 @@ def build_analytics(messages):
         # --------------------
         # Aggression Index
         # --------------------
-        words = re.findall(
-            r"\b[a-zA-Z]+\b",
-            content.lower()
-        )
-
-        aggressive_count = sum(
-            1
-            for word in words
-            if word in AGGRESSIVE_WORDS
-        )
+        contextual_agg = msg.get("contextual_aggression")
+        if contextual_agg is not None:
+            aggressive_count = contextual_agg * 10
+        else:
+            words = re.findall(
+                r"\b[a-zA-Z]+\b",
+                content.lower()
+            )
+            aggressive_count = sum(
+                1
+                for word in words
+                if word in AGGRESSIVE_WORDS
+            )
 
         aggression_scores[sender] = (
             aggression_scores.get(sender, 0)
@@ -186,11 +189,14 @@ def build_analytics(messages):
     # --------------------
     # Topic Drift
     # --------------------
-    topic_keywords = {
-        "happiness",
-        "measure",
-        "scientific"
-    }
+    if keywords:
+        topic_keywords = {w.strip().lower() for w in keywords if w.strip()}
+    else:
+        topic_keywords = {
+            "happiness",
+            "measure",
+            "scientific"
+        }
 
     found_keywords = 0
 
@@ -232,6 +238,11 @@ async def generate_session_analytics(
     session_id: str
 ):
 
+    session = await db.sessions.find_one({"session_id": session_id})
+    keywords = None
+    if session:
+        keywords = session.get("keywords")
+
     messages = await db.messages.find(
         {"session_id": session_id}
     ).sort(
@@ -243,13 +254,17 @@ async def generate_session_analytics(
         return None
 
     analytics_data = build_analytics(
-        messages
+        messages,
+        keywords=keywords
     )
 
     analytics_doc = {
         "session_id": session_id,
         **analytics_data
     }
+
+    if session and "judge_decision" in session:
+        analytics_doc["judge_decision"] = session["judge_decision"]
 
     await db.analytics.update_one(
         {

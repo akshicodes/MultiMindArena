@@ -18,5 +18,11 @@ messages = [
 ]
 
 result = build_analytics(messages)
+print("Standard Drift:", result["topic_drift_score"])
+assert result["topic_drift_score"] == 1.0
 
-print(result)
+result_dynamic = build_analytics(messages, keywords=["idea", "interesting"])
+print("Dynamic Drift (with matching words):", result_dynamic["topic_drift_score"])
+assert result_dynamic["topic_drift_score"] == 0.0
+
+print("All tests passed successfully!")

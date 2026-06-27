@@ -71,6 +71,7 @@ const totalMessages =
         renderTopicDrift(
     data.topic_drift_score
 );
+        renderJudgeEvaluation(data.judge_decision);
 
     } catch (err) {
         console.error("Analytics Error:", err);
@@ -261,7 +262,8 @@ function renderWordCloud(words) {
         weightFactor: 1.5,
         minSize: 12,
         rotateRatio: 0.5,
-        backgroundColor: "white"
+        color: "random-light",
+        backgroundColor: "transparent"
     }
 );
 }
@@ -315,3 +317,44 @@ loadAnalytics();
 setInterval(() => {
     loadAnalytics();
 }, 10000);
+
+function renderJudgeEvaluation(decision) {
+    const cardEl = document.getElementById("judgeEvaluationCard");
+    const winnerEl = document.getElementById("judge-winner");
+    const summaryEl = document.getElementById("judge-summary");
+    const gradesEl = document.getElementById("judgeGrades");
+
+    if (!cardEl) return;
+
+    if (!decision || !decision.winner) {
+        cardEl.style.display = "none";
+        return;
+    }
+
+    winnerEl.textContent = `Winner: ${decision.winner}`;
+    summaryEl.textContent = decision.decision_summary || "";
+
+    if (gradesEl) {
+        gradesEl.innerHTML = "";
+        const evaluations = decision.evaluations || [];
+        evaluations.forEach(evalData => {
+            const pName = evalData.participant || "";
+            const modelScores = [
+                `Logical Consistency: ${evalData.logical_consistency?.score || 0}/10`,
+                `Rebuttal: ${evalData.rebuttal_effectiveness?.score || 0}/10`,
+                `Persuasiveness: ${evalData.persuasiveness?.score || 0}/10`,
+                `Rhetorical Style: ${evalData.evidence_rhetorical_style?.score || 0}/10`
+            ].join(", ");
+
+            const item = document.createElement("div");
+            item.style.cssText = "font-size: 0.78rem; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 0.5rem;";
+            item.innerHTML = `
+                <div style="font-weight: 600; color: #fff; margin-top: 0.25rem;">${pName}</div>
+                <div style="color: #bbb; font-size: 0.74rem; margin-top: 0.15rem; line-height: 1.3;">${modelScores}</div>
+            `;
+            gradesEl.appendChild(item);
+        });
+    }
+
+    cardEl.style.display = "block";
+}

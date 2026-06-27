@@ -19,6 +19,7 @@ from .state import SessionState, SpeakerState
 from backend.analytics.aggregator import (
     generate_session_analytics
 )
+from backend.analytics.referee import evaluate_debate_with_llm
 
 
 BroadcastCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
@@ -388,6 +389,17 @@ class DebateEngine:
                 }
             },
         )
+
+        # Run LLM-as-a-judge referee evaluation
+        try:
+            judge_decision = await evaluate_debate_with_llm(state)
+            if judge_decision:
+                await db.sessions.update_one(
+                    {"session_id": state.session_id},
+                    {"$set": {"judge_decision": judge_decision}}
+                )
+        except Exception as e:
+            safe_print(f"Error running LLM-as-a-judge: {e}")
 
         # Final analytics update
         await generate_session_analytics(
