@@ -324,13 +324,22 @@
 /* Chat Transcript Arena Section */
 .debate-transcript-pane {
   flex: 1;
-  min-height: 0; /* Critical: allows flex child to shrink below its content size */
+  min-height: 0;
   overflow-y: auto;
-  padding: 1.5rem 1.5rem 6.5rem 1.5rem; /* Large bottom padding for fixed composer */
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   scroll-behavior: smooth;
+}
+
+/* Fix flexbox ignoring padding-bottom by adding a spacer */
+.debate-transcript-pane::after {
+  content: "";
+  display: block;
+  min-height: 6.5rem;
+  flex-shrink: 0;
+  order: 10000;
 }
 
 /* Custom scrollbar for the debate transcript */
@@ -474,13 +483,28 @@
 }
 
 .typing-alert-bar {
-  position: absolute;
-  bottom: 5rem;
-  left: 1.5rem;
+  order: 9999;
+  position: static;
+  margin-top: 1rem;
+  align-self: flex-start;
   font-size: 0.8rem;
   color: var(--text-muted);
   font-style: italic;
   min-height: 1.25rem;
+  background-color: var(--bg-black);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--white-outline);
+  z-index: 10;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+.message {
+  order: 1;
+}
+
+.typing-alert-bar:empty {
+  display: none;
 }
 
 /* User Message Composer Input fixed at bottom */
@@ -492,6 +516,7 @@
   padding: 1.25rem 1.5rem;
   background: linear-gradient(to top, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
   flex-shrink: 0;
+  z-index: 20;
 }
 
 .composer-body {

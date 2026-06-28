@@ -60,7 +60,7 @@ class DebateEngine:
         cleaned = text.replace("\r\n", " ").replace("\r", " ").strip()
         return cleaned or "[Empty text content returned]"
 
-    def _trim_to_word_window(self, text: str, minimum_words: int = 30, maximum_words: int = 80) -> str:
+    def _trim_to_word_window(self, text: str, minimum_words: int = 5, maximum_words: int = 40) -> str:
         words = text.split()
         if len(words) < minimum_words:
             return text
@@ -254,7 +254,7 @@ class DebateEngine:
                     model=speaker.model,
                     messages=messages,
                     temperature=0.45,
-                    max_tokens=450,
+                    max_tokens=120,
                 ):
                     collected_chunks.append(chunk)
                     await self._emit(
@@ -282,7 +282,7 @@ class DebateEngine:
                         model=speaker.model,
                         messages=messages,
                         temperature=0.45,
-                        max_tokens=450,
+                        max_tokens=120,
                     )
                     if response_text:
                         collected_chunks = [response_text]
@@ -409,6 +409,15 @@ class DebateEngine:
         safe_print(
             f"Analytics generated for session "
             f"{state.session_id}"
+        )
+
+        # Notify frontend that the debate has ended so it can refresh history
+        await self._emit(
+            broadcaster,
+            {
+                "event": "debate.ended",
+                "session_id": state.session_id,
+            },
         )
 
         return state.transcript

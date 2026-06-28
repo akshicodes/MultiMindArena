@@ -31,30 +31,20 @@ function connectWebSocket(sessionId) {
 
     if (payload.event === "message.stream") {
       removeTypingIndicator();
-      
+
       const speaker = payload.speaker;
       const messageId = payload.message_id;
       const content = payload.content;
 
-      if (speaker && speaker !== "User" && isSpeakerEnabledForTts(speaker) && ttsEnableCheckbox?.checked) {
-        if (!ttsStreamState[messageId]) {
-          ttsStreamState[messageId] = { processedLength: 0 };
-        }
-        
-        const state = ttsStreamState[messageId];
-        const unprocessedText = content.substring(state.processedLength);
-        
-        // Match up to the last sentence boundary in the unprocessed text
-        const match = unprocessedText.match(/.*[.!?\n](?=\s|$)/s);
-        
-        if (match) {
-          const chunk = match[0];
-          state.processedLength += chunk.length;
-          if (chunk.trim()) {
-            void playTtsForChunk(messageId, speaker, chunk.trim(), { auto: true });
-          }
-        }
-      }
+      // Render the streaming text visually but do NOT trigger TTS here.
+      // TTS fires only once on message.final so sentences stay in correct order.
+      renderMessage(messageId, speaker, content);
+      return;
+    }
+
+    if (payload.event === "debate.ended") {
+      // Automatically refresh the history sidebar so the new session appears
+      loadHistory();
       return;
     }
 
@@ -69,24 +59,13 @@ function connectWebSocket(sessionId) {
 
       if (payload.message) {
         appendStaticMessage(payload.message);
-        
+
+        // Play TTS for the full, complete message — guarantees correct sentence order
         if (speaker && speaker !== "User" && isSpeakerEnabledForTts(speaker) && ttsEnableCheckbox?.checked) {
           const messageId = payload.message.message_id || payload.message_id;
           const content = payload.message.content || "";
-          if (messageId) {
-            const state = ttsStreamState[messageId];
-            const processedLength = state ? state.processedLength : 0;
-            
-            if (processedLength < content.length) {
-              const chunk = content.substring(processedLength);
-              if (chunk.trim()) {
-                void playTtsForChunk(messageId, speaker, chunk.trim(), { auto: true });
-              }
-            }
-            
-            if (state) {
-              delete ttsStreamState[messageId];
-            }
+          if (messageId && content.trim()) {
+            void playTtsForMessage(payload.message);
           }
         }
       }
@@ -283,7 +262,10 @@ async function startDebate() {
     const payload = await response.json();
     setActiveSession(payload.session_id);
     connectWebSocket(payload.session_id);
-    if (transcript) transcript.innerHTML = "";
+    if (transcript) {
+      transcript.innerHTML = "";
+      if (typingIndicator) transcript.appendChild(typingIndicator);
+    }
     streamNodes.clear();
     pendingLaunch = { sessionId: payload.session_id, rounds };
     launchRequested = false;
@@ -516,6 +498,7 @@ async function openHistorySession(sessionId) {
         }
 
           transcript.innerHTML = "";
+          if (typingIndicator) transcript.appendChild(typingIndicator);
 
         streamNodes.clear();
         setActiveSession(sessionId, true);
@@ -546,6 +529,7 @@ function startNewDebate() {
 
     // Clear transcript
     transcript.innerHTML = "";
+    if (typingIndicator) transcript.appendChild(typingIndicator);
     streamNodes.clear();
 
     // Clear current session

@@ -138,14 +138,15 @@ def build_analytics(messages, keywords=None):
         # --------------------
         # Aggression Index
         # --------------------
+        words = re.findall(
+            r"\b[a-zA-Z]+\b",
+            content.lower()
+        )
+        
         contextual_agg = msg.get("contextual_aggression")
         if contextual_agg is not None:
             aggressive_count = contextual_agg * 10
         else:
-            words = re.findall(
-                r"\b[a-zA-Z]+\b",
-                content.lower()
-            )
             aggressive_count = sum(
                 1
                 for word in words

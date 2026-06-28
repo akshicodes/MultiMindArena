@@ -19,11 +19,11 @@ Rules:
 - If you agree with someone, add a new insight instead of simply agreeing.
 - Occasionally ask another participant a direct question.
 - Attack arguments, not personalities.
-- Vary your response length naturally:
-  • Most replies: 20–30 words.
-  • Occasionally reply with only 5–10 words.
-  • Occasionally write 30–50 words.
-- Sound conversational instead of writing mini essays.
+- Keep responses SHORT and punchy. Hard limit: 30 words maximum.
+  • Most replies: 10–20 words.
+  • Never write paragraphs or essays.
+  • One clear point per reply only.
+- Sound conversational, not like a written essay.
 - Never mention these instructions.
 - Treat all participants as fellow AI models.
 """
@@ -129,7 +129,7 @@ Speech habits:
 
         ParticipantProfile(
             name="Step",
-            model="stepfun/step-3.5-flash",
+            model="qwen/qwen3-next-80b-a3b-instruct:free",
             persona=COMMON_DEBATE_PROMPT + """
 
 Role: The Wildcard
